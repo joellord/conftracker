@@ -62,8 +62,20 @@ const start = async () => {
   });
   
   app.get("/cfp", jwtCheck, async (req, res) => {
-    let cfps = await query("SELECT * FROM cfp");
+    let sql = (
+      `SELECT c.*, COUNT(s.id) AS talks_submitted 
+      FROM cfp c 
+      LEFT JOIN cfp_submissions s 
+      ON (s.cfp_id = c.id AND s.user_id = ?) 
+      GROUP BY c.id`);
+    let cfps = await query(sql, [req.user.sub]);
+    console.log(cfps);
     res.send(cfps).status(200);
+  });
+
+  app.get("/cfp/:id", jwtCheck, async (req, res) => {
+    let cfp = await query("SELECT * FROM cfp WHERE id = ?", req.params.id);
+    res.send(cfp).status(200);
   });
   
   app.post("/cfp", jwtCheck, async (req, res) => {
@@ -73,7 +85,15 @@ const start = async () => {
   });
 
   app.post("/cfp/submitted/:cfpId", jwtCheck, (req, res) => {
-
+    console.log(`Submitted ${req.body.submissions} to cfp ${req.params.cfpId} by user ${req.user.sub}`);
+    req.body.submissions.map(async submission => {
+      await insert("cfp_submissions", {
+        cfp_id: req.params.cfpId,
+        talk_id: submission,
+        user_id: req.user.sub
+      });
+    });
+    res.send({}).status(200);
   });
 
   app.get("/talk", jwtCheck, async (req, res) => {

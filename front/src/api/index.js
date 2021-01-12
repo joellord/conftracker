@@ -8,6 +8,15 @@ class API {
     this.BASE_URL = options.BASE_URL;
   }
 
+  async getCfp(id) {
+    let data = await fetch(`${this.BASE_URL}/cfp/${id}`, {
+      headers: {
+        "Authorization": `Bearer ${keycloak.default.token}`
+      }
+    }).then(resp=>resp.json());
+    return data[0];
+  }
+
   async getCfps() {
     let data = await fetch(`${this.BASE_URL}/cfp`, {
       headers: {
@@ -20,6 +29,20 @@ class API {
   async postCfp(data) {
     data.created_by = keycloak.default.tokenParsed.sub;
     let response = await fetch(`${this.BASE_URL}/cfp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${keycloak.default.token}`
+      },
+      body: JSON.stringify(data)
+    }).then(resp=>resp.json());
+    return response;
+  }
+
+  async submitTalks(cfpId, submissions) {
+    let data = { submissions };
+    console.log(`Submitting ${submissions} to cfp ${cfpId}`);
+    let response = await fetch(`${this.BASE_URL}/cfp/submitted/${cfpId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

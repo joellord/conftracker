@@ -21,7 +21,7 @@ export default class Cfp extends Component {
     this.state = {
       isModalOpen: false,
       form: this.emptyForm,
-      cfpColumns: ["Conference", "Dates", "CFP Close Date"],
+      cfpColumns: ["Conference", "Dates", "CFP Close Date", "Status"],
       cfps: []
     };
     this.handleModalToggle = () => {
@@ -50,15 +50,21 @@ export default class Cfp extends Component {
         cells.push(cfp.conference);
         cells.push(`${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`);
         cells.push(formatDate(cfp.cfp_close_date));
-        return { cells, cfpLink: cfp.cfp_url };
+        let status = "Awaiting Submissions";
+        console.log(cfp.talks_submitted);
+        if (parseInt(cfp.talks_submitted)) status = "Submitted";
+        cells.push(status);
+        return { cells, cfpLink: cfp.cfp_url, id: cfp.id };
       });
       this.setState({ cfps });
     }
   }
 
   tableActions(rowData, { rowIndex }) {
-
     return [
+      {
+        title: <a href={`/cfp/submit/${rowData.id}`}>Submitted</a>,
+      },
       {
         title: rowData.cfpLink ? <a href={rowData.cfpLink} target="_blank" rel="noreferrer">CFP</a> : "No CFP Link"
       }
