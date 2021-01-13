@@ -18,6 +18,7 @@ import {
   PageHeaderToolsGroup,
   PageHeaderToolsItem
 } from '@patternfly/react-core';
+import Link from "./Link";
 import CogIcon from '@patternfly/react-icons/dist/js/icons/cog-icon';
 import HelpIcon from '@patternfly/react-icons/dist/js/icons/help-icon';
 import imgAvatar from '@patternfly/react-core/src/components/Avatar/examples/avatarImg.svg';
@@ -29,7 +30,7 @@ class Layout extends Component {
     this.state = {
       isDropdownOpen: false,
       isKebabDropdownOpen: false,
-      activeItem: 0
+      route: window.location.pathname
     };
     this.onDropdownToggle = isDropdownOpen => {
       this.setState({
@@ -61,27 +62,28 @@ class Layout extends Component {
   render() {
     let keycloak = this.props.keycloak;
     
-    const { isDropdownOpen, isKebabDropdownOpen, activeItem } = this.state;
+    const { isDropdownOpen, isKebabDropdownOpen, route } = this.state;
     const PageNav = (
       <Nav onSelect={this.onNavSelect} aria-label="Nav">
         <NavList>
-          <NavItem itemId={0} isActive={activeItem === 0} to="/cfp">
-            CFPs
+          <Link to="/cfp">
+          <NavItem to="/cfp" itemId={0} isActive={route.substr(0, 4) === "/cfp"}>
+          CFPs
           </NavItem>
-          <NavItem itemId={1} isActive={activeItem === 1} to="/upcoming">
-            Upcoming Events
-          </NavItem>
-          <NavItem itemId={1} isActive={activeItem === 1} to="/talk">
+          </Link>
+          <Link to="/talk">
+          <NavItem to="/talk" itemId={1} isActive={route.indexOf("/talk") > -1} to="/talk">
             My Talks
           </NavItem>
+          </Link>
         </NavList>
       </Nav>
     );
     const kebabDropdownItems = [
-      <DropdownItem>
+      <DropdownItem key="settings">
         <CogIcon /> Settings
       </DropdownItem>,
-      <DropdownItem>
+      <DropdownItem key="help">
         <HelpIcon /> Help
       </DropdownItem>
     ];

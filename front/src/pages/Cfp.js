@@ -2,9 +2,18 @@ import React, { Component } from "react";
 import API from "../api";
 import { formatDate } from "../utils/helpers";
 import Layout from "../components/Layout";
-import { Table, TableHeader, TableBody } from "@patternfly/react-table";
-import { Button, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput } from "@patternfly/react-core";
+import Link from "../components/Link";
+import { Alert, Button, DataList, DataListCell, DataListItem, DataListItemCells, DataListItemRow, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput, Tooltip } from "@patternfly/react-core";
 import PlusIcon from "@patternfly/react-icons/dist/js/icons/plus-circle-icon";
+import CalendarIcon from "@patternfly/react-icons/dist/js/icons/calendar-alt-icon";
+import CfpIcon from "@patternfly/react-icons/dist/js/icons/pencil-ruler-icon";
+import StatusPendingIcon from "@patternfly/react-icons/dist/js/icons/pending-icon";
+import StatusSubmittedIcon from "@patternfly/react-icons/dist/js/icons/check-circle-icon";
+
+const STATUS = {
+  PENDING: "Pending",
+  SUBMITTED: "Submitted"
+};
 
 export default class Cfp extends Component {
   emptyForm = {
@@ -45,16 +54,15 @@ export default class Cfp extends Component {
     }
     this.updateCfps = async () => {
       let cfps = await API.getCfps();
+      let now = new Date();
       cfps = cfps.map(cfp => {
-        let cells = [];
-        cells.push(cfp.conference);
-        cells.push(`${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`);
-        cells.push(formatDate(cfp.cfp_close_date));
-        let status = "Awaiting Submissions";
-        console.log(cfp.talks_submitted);
-        if (parseInt(cfp.talks_submitted)) status = "Submitted";
-        cells.push(status);
-        return { cells, cfpLink: cfp.cfp_url, id: cfp.id };
+        cfp.dates = `${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`;
+        let cfpClosingDate = new Date(cfp.cfp_close_date);
+        cfp.cfp_close_date = formatDate(cfp.cfp_close_date);
+        const soonInMs = 10 * 24 * 60 * 60 * 1000;
+        if (cfpClosingDate.getTime() - now.getTime() < soonInMs) cfp.closingSoon = true;
+        cfp.status = cfp.talks_submitted > 0 ? STATUS.SUBMITTED : STATUS.PENDING;
+        return cfp;
       });
       this.setState({ cfps });
     }
@@ -77,6 +85,7 @@ export default class Cfp extends Component {
 
   render() {
     const { isModalOpen, conference, start_date, end_date, cfp_close_date, url, cfp_url } = this.state;
+
     return (
       <Layout>
         <PageSection variant={PageSectionVariants.light}>
@@ -121,13 +130,69 @@ export default class Cfp extends Component {
           </TextContent>
         </PageSection>
         <PageSection>
-          <Table
-            actionResolver={this.tableActions}
-            cells={this.state.cfpColumns} 
-            rows={this.state.cfps}>
-            <TableHeader />
-            <TableBody />
-          </Table>
+          <DataList aria-label="CFP list" isCompact>
+            {this.state.cfps.map(cfp => {
+              return (
+                <DataListItem id={cfp.id} key={cfp.id}>
+                  <DataListItemRow>
+                    <DataListItemCells dataListCells={[
+                      <DataListCell key="conference">
+                        {cfp.conference}
+                      </DataListCell>,
+                      <DataListCell width={1} key="dates">
+                        <CalendarIcon /> {cfp.dates}
+                      </DataListCell>,
+                      <DataListCell width={1} key="cfpDate">
+                        <CfpIcon /> {cfp.cfp_close_date}
+                      </DataListCell>,
+                      <DataListCell width={1} key="status">
+                        {cfp.status === STATUS.PENDING && 
+                        <div>
+                        <StatusPendingIcon id={`statusIcon-${cfp.id}`} />
+                        <Tooltip 
+                          content="No talks submitted yet"
+                          reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                        />
+                        </div>
+                        }
+                        {cfp.status === STATUS.SUBMITTED &&
+                        <div>
+                          <StatusSubmittedIcon id={`statusIcon-${cfp.id}`} />
+                          <Tooltip
+                            content={`Submitted ${cfp.talks_submitted} talk${cfp.talks_submitted > 1 ? "s" : ""}`}
+                            reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                          />
+                        </div>
+                        }
+                      </DataListCell>
+                      ]} 
+                    />
+                  </DataListItemRow>
+                  {cfp.closingSoon && cfp.status === STATUS.PENDING && 
+                    <DataListItemRow>
+                      <DataListItemCells dataListCells={[
+                        <DataListCell key="closingsoon">
+                          <Alert variant="warning" isInline title="CFP Closing Soon" />
+                        </DataListCell>
+                      ]} />
+                    </DataListItemRow>
+                  }
+                  <DataListItemRow>
+                    <DataListItemCells dataListCells={[
+                      <DataListCell width={1} key="info">
+                        Links: {" "}
+                        <Link to={cfp.url} external>Website</Link>{" "}
+                        <Link to={cfp.cfp_url} external>CFP</Link>
+                      </DataListCell>,
+                      <DataListCell key="actions">
+                        <Link to={`/cfp/submit/${cfp.id}`}>Submit</Link>
+                      </DataListCell>
+                    ]} />
+                  </DataListItemRow>
+                </DataListItem>
+              )
+            })}
+          </DataList>
           <br/>
           <br/>
         </PageSection>

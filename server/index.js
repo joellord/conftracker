@@ -67,7 +67,8 @@ const start = async () => {
       FROM cfp c 
       LEFT JOIN cfp_submissions s 
       ON (s.cfp_id = c.id AND s.user_id = ?) 
-      GROUP BY c.id`);
+      WHERE c.cfp_close_date >= NOW()
+      GROUP BY c.id ORDER BY cfp_close_date`);
     let cfps = await query(sql, [req.user.sub]);
     console.log(cfps);
     res.send(cfps).status(200);
