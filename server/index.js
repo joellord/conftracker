@@ -52,6 +52,25 @@ const insert = (table, values) => {
   return query(sql, Object.values(values));
 }
 
+const update = async (table, values, where) => {
+  let params = [];
+  let updateSql = "";
+  Object.keys(values).map(field => {
+    updateSql += `${field}=?, `;
+    params.push(values[field]);
+  });
+  updateSql = updateSql.substr(0, updateSql.lastIndexOf(", "));
+  let whereSql = "";
+  Object.keys(where).map(whereKey => {
+    whereSql += `${whereKey}=? AND `;
+    params.push(where[whereKey]);
+  });
+  whereSql = whereSql.substr(0, whereSql.lastIndexOf(" AND "));
+  let sql = `UPDATE ${table} SET ${updateSql} WHERE ${whereSql}`;
+  let resp = await query(sql, params);
+  return resp;
+}
+
 const start = async () => {
   publicKey= await getCertificate();
 
@@ -63,14 +82,16 @@ const start = async () => {
   
   app.get("/cfp", jwtCheck, async (req, res) => {
     let sql = (
-      `SELECT c.*, COUNT(s.id) AS talks_submitted 
+      `SELECT c.*,
+        COUNT(s.id) AS talks_submitted,
+        SUM(s.accepted = 1) AS talks_accepted,
+        SUM(s.accepted = 0) AS talks_rejected
       FROM cfp c 
       LEFT JOIN cfp_submissions s 
       ON (s.cfp_id = c.id AND s.user_id = ?) 
       WHERE c.cfp_close_date >= NOW()
       GROUP BY c.id ORDER BY cfp_close_date`);
     let cfps = await query(sql, [req.user.sub]);
-    console.log(cfps);
     res.send(cfps).status(200);
   });
 
@@ -80,8 +101,10 @@ const start = async () => {
   });
   
   app.post("/cfp", jwtCheck, async (req, res) => {
-    console.log(req.body);
-    insert("cfp", req.body);
+    let data = req.body;
+    data.created_by = req.user.sub;
+    console.log(data);
+    insert("cfp", data);
     res.send({}).status(200);
   });
 
@@ -97,14 +120,40 @@ const start = async () => {
     res.send({}).status(200);
   });
 
+  app.post("/cfp/approved/:cfpId", jwtCheck, async (req, res) => {
+    console.log(`Talks approved for cfp ${req.params.cfpId}: ${req.body.approved} for user ${req.user.sub}`);
+    let submissions = await query("SELECT * FROM cfp_submissions WHERE cfp_id = ? AND user_id = ?", [req.params.cfpId, req.user.sub]);
+    submissions.map(async submission => {
+      await update(
+        "cfp_submissions", 
+        {accepted: (req.body.approved.indexOf(submission.talk_id) > -1)}, 
+        {id: submission.id}
+      );
+    });
+    res.send({}).status(200);
+  });
+
+  app.post("/cfp/rejected/:cfpId", jwtCheck, async (req, res) => {
+    console.log(`All talks rejected for cfp ${req.params.cfpId}`);
+    await update("cfp_submissions", {accepted: false}, {user_id: req.user.sub, cfp_id: req.params.cfpId});
+    res.send({}).status(200);
+  });
+
+  app.get("/cfp/submitted/:cfpId", jwtCheck, async (req, res) => {
+    let talks = await query("SELECT t.* FROM talk t, cfp_submissions s WHERE s.cfp_id = ? GROUP BY t.id", req.params.cfpId);
+    res.send(talks).status(200);
+  });
+
   app.get("/talk", jwtCheck, async (req, res) => {
     let talks = await query("SELECT * FROM talk WHERE created_by = ?", req.user.sub);
     res.send(talks).status(200);
   });
   
   app.post("/talk", jwtCheck, async (req, res) => {
-    console.log(req.body);
-    insert("talk", req.body);
+    let data = req.body;
+    data.created_by = req.user.sub;
+    console.log(data);
+    insert("talk", data);
     res.send({}).status(200);
   });
 

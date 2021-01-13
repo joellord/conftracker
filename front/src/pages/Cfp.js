@@ -1,19 +1,18 @@
 import React, { Component } from "react";
 import API from "../api";
-import { formatDate } from "../utils/helpers";
 import Layout from "../components/Layout";
 import Link from "../components/Link";
-import { Alert, Button, DataList, DataListCell, DataListItem, DataListItemCells, DataListItemRow, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput, Tooltip } from "@patternfly/react-core";
+import { ActionList, ActionListItem, Alert, Button, DataList, DataListCell, DataListItem, DataListItemCells, DataListItemRow, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput, Tooltip } from "@patternfly/react-core";
 import PlusIcon from "@patternfly/react-icons/dist/js/icons/plus-circle-icon";
 import CalendarIcon from "@patternfly/react-icons/dist/js/icons/calendar-alt-icon";
-import CfpIcon from "@patternfly/react-icons/dist/js/icons/pencil-ruler-icon";
+import CfpIcon from "@patternfly/react-icons/dist/js/icons/bullhorn-icon";
 import StatusPendingIcon from "@patternfly/react-icons/dist/js/icons/pending-icon";
-import StatusSubmittedIcon from "@patternfly/react-icons/dist/js/icons/check-circle-icon";
+import StatusSubmittedIcon from "@patternfly/react-icons/dist/js/icons/paper-plane-icon";
+import StatusAcceptedIcon from "@patternfly/react-icons/dist/js/icons/calendar-check-icon";
+import StatusRejectedIcon from "@patternfly/react-icons/dist/js/icons/times-circle-icon"
+import LinkIcon from "@patternfly/react-icons/dist/js/icons/link-icon";
 
-const STATUS = {
-  PENDING: "Pending",
-  SUBMITTED: "Submitted"
-};
+const STATUS = API.CFP_STATUS;
 
 export default class Cfp extends Component {
   emptyForm = {
@@ -54,17 +53,11 @@ export default class Cfp extends Component {
     }
     this.updateCfps = async () => {
       let cfps = await API.getCfps();
-      let now = new Date();
-      cfps = cfps.map(cfp => {
-        cfp.dates = `${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`;
-        let cfpClosingDate = new Date(cfp.cfp_close_date);
-        cfp.cfp_close_date = formatDate(cfp.cfp_close_date);
-        const soonInMs = 10 * 24 * 60 * 60 * 1000;
-        if (cfpClosingDate.getTime() - now.getTime() < soonInMs) cfp.closingSoon = true;
-        cfp.status = cfp.talks_submitted > 0 ? STATUS.SUBMITTED : STATUS.PENDING;
-        return cfp;
-      });
       this.setState({ cfps });
+    }
+    this.handleRejection = async (cfpId) => {
+      await API.cfpRejected(cfpId);
+      this.updateCfps();
     }
   }
 
@@ -137,36 +130,93 @@ export default class Cfp extends Component {
                   <DataListItemRow>
                     <DataListItemCells dataListCells={[
                       <DataListCell key="conference">
-                        {cfp.conference}
-                      </DataListCell>,
-                      <DataListCell width={1} key="dates">
-                        <CalendarIcon /> {cfp.dates}
-                      </DataListCell>,
-                      <DataListCell width={1} key="cfpDate">
-                        <CfpIcon /> {cfp.cfp_close_date}
-                      </DataListCell>,
-                      <DataListCell width={1} key="status">
-                        {cfp.status === STATUS.PENDING && 
                         <div>
-                        <StatusPendingIcon id={`statusIcon-${cfp.id}`} />
-                        <Tooltip 
-                          content="No talks submitted yet"
-                          reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
-                        />
+                          <Text component="p">{cfp.conference}</Text>
+                          <CalendarIcon /> {cfp.dates} <CfpIcon /> {cfp.cfp_close_date}
                         </div>
-                        }
-                        {cfp.status === STATUS.SUBMITTED &&
                         <div>
-                          <StatusSubmittedIcon id={`statusIcon-${cfp.id}`} />
-                          <Tooltip
-                            content={`Submitted ${cfp.talks_submitted} talk${cfp.talks_submitted > 1 ? "s" : ""}`}
+                          {cfp.status === STATUS.PENDING && 
+                          <div>
+                          <StatusPendingIcon id={`statusIcon-${cfp.id}`} />
+                          <Tooltip 
+                            content="No talks submitted yet"
                             reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
                           />
+                          </div>
+                          }
+                          {cfp.status === STATUS.SUBMITTED &&
+                          <div>
+                            <StatusSubmittedIcon id={`statusIcon-${cfp.id}`} />
+                            <Tooltip
+                              content={`Submitted ${cfp.talks_submitted} talk${cfp.talks_submitted > 1 ? "s" : ""}`}
+                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                            />
+                          </div>
+                          }
+                          {cfp.status === STATUS.ACCEPTED &&
+                          <div>
+                            <StatusAcceptedIcon id={`statusIcon-${cfp.id}`} />
+                            <Tooltip
+                              content={`${cfp.talks_accepted} talk${cfp.talks_submitted > 1 ? "s" : ""} accepted`}
+                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                            />
+                          </div>
+                          }
+                          {cfp.status === STATUS.REJECTED &&
+                          <div>
+                            <StatusRejectedIcon id={`statusIcon-${cfp.id}`} />
+                            <Tooltip
+                              content={`All talks were rejected`}
+                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                            />
+                          </div>
+                          }
                         </div>
-                        }
                       </DataListCell>
                       ]} 
                     />
+                    <DataListItemCells dataListCells={[
+                      <DataListCell>
+                        <div>
+                          <Link to={cfp.url} external><LinkIcon /></Link>
+                          {" | "}
+                          <Link to={cfp.cfp_url} external><CfpIcon /></Link>
+                        </div>
+                      </DataListCell>
+                    ]} />
+                    <DataListItemCells dataListCells={[
+                      <DataListCell width={1} key="info">
+                        <div>
+                          {cfp.status === STATUS.PENDING && 
+                            <ActionList>
+                              <ActionListItem>
+                                <Link to={`/cfp/submit/${cfp.id}`}>
+                                  <Button variant="secondary">
+                                    Submit
+                                  </Button>
+                                </Link>
+                              </ActionListItem>
+                            </ActionList>
+                          }
+                          {cfp.status === STATUS.SUBMITTED &&
+                            <ActionList>
+                              <ActionListItem>
+                                <Link to={`/cfp/approved/${cfp.id}`}>
+                                  <Button variant="primary">
+                                    Approved
+                                  </Button>
+                                </Link>
+                              </ActionListItem>
+                              <ActionListItem>
+                                <Button variant="warning" onClick={() => this.handleRejection(cfp.id)}>
+                                  Rejected
+                                </Button>
+                              </ActionListItem>
+                            </ActionList>
+                          }
+                        </div>
+                      </DataListCell>
+                    ]} />
                   </DataListItemRow>
                   {cfp.closingSoon && cfp.status === STATUS.PENDING && 
                     <DataListItemRow>
@@ -177,18 +227,6 @@ export default class Cfp extends Component {
                       ]} />
                     </DataListItemRow>
                   }
-                  <DataListItemRow>
-                    <DataListItemCells dataListCells={[
-                      <DataListCell width={1} key="info">
-                        Links: {" "}
-                        <Link to={cfp.url} external>Website</Link>{" "}
-                        <Link to={cfp.cfp_url} external>CFP</Link>
-                      </DataListCell>,
-                      <DataListCell key="actions">
-                        <Link to={`/cfp/submit/${cfp.id}`}>Submit</Link>
-                      </DataListCell>
-                    ]} />
-                  </DataListItemRow>
                 </DataListItem>
               )
             })}
