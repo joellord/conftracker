@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import API from "../api";
 import Layout from "../components/Layout";
 import Link from "../components/Link";
-import { ActionList, ActionListItem, Alert, Button, DataList, DataListCell, DataListItem, DataListItemCells, DataListItemRow, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput, Tooltip } from "@patternfly/react-core";
+import { ActionList, ActionListItem, Alert, Button, DataList, DataListCell, DataListItem, DataListItemCells, DataListItemRow, Form, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, TextInput, ToggleGroup, ToggleGroupItem, Tooltip } from "@patternfly/react-core";
 import PlusIcon from "@patternfly/react-icons/dist/js/icons/plus-circle-icon";
 import CalendarIcon from "@patternfly/react-icons/dist/js/icons/calendar-alt-icon";
 import CfpIcon from "@patternfly/react-icons/dist/js/icons/bullhorn-icon";
@@ -30,8 +30,14 @@ export default class Cfp extends Component {
       isModalOpen: false,
       form: this.emptyForm,
       cfpColumns: ["Conference", "Dates", "CFP Close Date", "Status"],
-      cfps: []
+      cfps: [],
+      filters: {
+      }
     };
+    this.state.filters[STATUS.ACCEPTED] = false;
+    this.state.filters[STATUS.REJECTED] = false;
+    this.state.filters[STATUS.PENDING] = true;
+    this.state.filters[STATUS.SUBMITTED] = true;
     this.handleModalToggle = () => {
       this.setState(({ isModalOpen }) => ({
         isModalOpen: !isModalOpen
@@ -50,6 +56,12 @@ export default class Cfp extends Component {
         form[field] = value;
         return {form};
       });
+    }
+    this.handleFilter = (isSelected, event) => {
+      const id = event.currentTarget.id;
+      let state = Object.assign({}, this.state);
+      state.filters[id] = isSelected;
+      this.setState(state);
     }
     this.updateCfps = async () => {
       let cfps = await API.getCfps();
@@ -120,11 +132,20 @@ export default class Cfp extends Component {
                   </Form>
                 </Modal>
             </Text>
+            <Text component="p" align="left">
+              <ToggleGroup aria-label="Filters">
+                <ToggleGroupItem text="Accepted" isSelected={this.state.filters.accepted} onChange={this.handleFilter} buttonId="accepted" />
+                <ToggleGroupItem text="Rejected" isSelected={this.state.filters.rejected} onChange={this.handleFilter} buttonId="rejected" />
+                <ToggleGroupItem text="Submitted" isSelected={this.state.filters.submitted} onChange={this.handleFilter} buttonId="submitted" />
+                <ToggleGroupItem text="Pending" isSelected={this.state.filters.pending} onChange={this.handleFilter} buttonId="pending" />
+              </ToggleGroup>
+            </Text>
           </TextContent>
         </PageSection>
         <PageSection>
           <DataList aria-label="CFP list" isCompact>
             {this.state.cfps.map(cfp => {
+              if (!this.state.filters[cfp.status]) return;
               return (
                 <DataListItem id={cfp.id} key={cfp.id}>
                   <DataListItemRow>
