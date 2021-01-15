@@ -54,7 +54,8 @@ class API {
       cfp.cfp_close_date = formatDate(cfp.cfp_close_date);
       const soonInMs = 10 * 24 * 60 * 60 * 1000;
       if (cfpClosingDate.getTime() - now.getTime() < soonInMs) cfp.closingSoon = true;
-
+      if (cfpClosingDate.getTime() < now.getTime()) cfp.cfpExpired = true;
+      
       cfp.status = this.CFP_STATUS.PENDING;
       const submitted = cfp.talks_submitted;
       const accepted = (cfp.talks_accepted === null) ? 0 : cfp.talks_accepted;
@@ -78,8 +79,8 @@ class API {
     return response;
   }
 
-  async submitTalks(cfpId, submissions) {
-    let data = { submissions };
+  async submitTalks(cfpId, submissions, edit) {
+    let data = { submissions, edit };
     let response = await this.post(`/cfp/submitted/${cfpId}`, data);
     return response;
   }

@@ -71,6 +71,19 @@ const update = async (table, values, where) => {
   return resp;
 }
 
+const remove = async (table, where) => {
+  let params = [];
+  let whereSql = "";
+  Object.keys(where).map(whereKey => {
+    whereSql += `${whereKey}=? AND `;
+    params.push(where[whereKey]);
+  });
+  whereSql = whereSql.substr(0, whereSql.lastIndexOf(" AND "));
+  let sql = `DELETE FROM ${table} WHERE ${whereSql}`;
+  let resp = await query(sql, params);
+  return resp;
+}
+
 const start = async () => {
   publicKey= await getCertificate();
 
@@ -89,7 +102,7 @@ const start = async () => {
       FROM cfp c 
       LEFT JOIN cfp_submissions s 
       ON (s.cfp_id = c.id AND s.user_id = ?) 
-      WHERE c.cfp_close_date >= NOW()
+      WHERE c.end_date >= NOW()
       GROUP BY c.id ORDER BY cfp_close_date`);
     let cfps = await query(sql, [req.user.sub]);
     res.send(cfps).status(200);
@@ -108,7 +121,14 @@ const start = async () => {
     res.send({}).status(200);
   });
 
-  app.post("/cfp/submitted/:cfpId", jwtCheck, (req, res) => {
+  app.post("/cfp/submitted/:cfpId", jwtCheck, async (req, res) => {
+    if (req.body.edit) {
+      console.log(`This is an edit, start by removing previous entries`);
+      await remove("cfp_submissions", {
+        cfp_id: req.params.cfpId,
+        user_id: req.user.sub
+      });
+    }
     console.log(`Submitted ${req.body.submissions} to cfp ${req.params.cfpId} by user ${req.user.sub}`);
     req.body.submissions.map(async submission => {
       await insert("cfp_submissions", {
@@ -140,7 +160,7 @@ const start = async () => {
   });
 
   app.get("/cfp/submitted/:cfpId", jwtCheck, async (req, res) => {
-    let talks = await query("SELECT t.* FROM talk t, cfp_submissions s WHERE s.cfp_id = ? GROUP BY t.id", req.params.cfpId);
+    let talks = await query("SELECT t.* FROM talk t, cfp_submissions s WHERE s.talk_id = t.id AND s.cfp_id = ? GROUP BY t.id", req.params.cfpId);
     res.send(talks).status(200);
   });
 

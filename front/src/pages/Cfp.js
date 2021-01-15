@@ -11,6 +11,7 @@ import StatusSubmittedIcon from "@patternfly/react-icons/dist/js/icons/paper-pla
 import StatusAcceptedIcon from "@patternfly/react-icons/dist/js/icons/calendar-check-icon";
 import StatusRejectedIcon from "@patternfly/react-icons/dist/js/icons/times-circle-icon"
 import LinkIcon from "@patternfly/react-icons/dist/js/icons/link-icon";
+import EditIcon from "@patternfly/react-icons/dist/js/icons/edit-alt-icon";
 
 const STATUS = API.CFP_STATUS;
 
@@ -51,11 +52,12 @@ export default class Cfp extends Component {
     };
     this.handleTextChange = (value, event) => {
       let field = event.target.getAttribute("id");
-      this.setState(prev => {
-        let form = Object.assign({}, prev.form);
-        form[field] = value;
-        return {form};
-      });
+      let state = Object.assign({}, this.state);
+      state.form[field] = value;
+      if (field === "start_date" && !this.state.form.end_date) {
+        state.form["end_date"] = value;
+      }
+      this.setState(state);
     }
     this.handleFilter = (isSelected, event) => {
       const id = event.currentTarget.id;
@@ -146,6 +148,7 @@ export default class Cfp extends Component {
           <DataList aria-label="CFP list" isCompact>
             {this.state.cfps.map(cfp => {
               if (!this.state.filters[cfp.status]) return;
+              if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return;
               return (
                 <DataListItem id={cfp.id} key={cfp.id}>
                   <DataListItemRow>
@@ -171,7 +174,14 @@ export default class Cfp extends Component {
                             <Tooltip
                               content={`Submitted ${cfp.talks_submitted} talk${cfp.talks_submitted > 1 ? "s" : ""}`}
                               reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
-                            />
+                            />{` | `}
+                            <Link to={`cfp/submit/${cfp.id}?edit`}>
+                              <EditIcon id={`editIcon-${cfp.id}`} />
+                              <Tooltip
+                                content={`Edit submissions`}
+                                reference={() => document.getElementById(`editIcon-${cfp.id}`)}
+                              />
+                            </Link>
                           </div>
                           }
                           {cfp.status === STATUS.ACCEPTED &&
