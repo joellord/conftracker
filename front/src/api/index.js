@@ -9,7 +9,8 @@ class API {
     PENDING: "pending",
     SUBMITTED: "submitted",
     ACCEPTED: "accepted",
-    REJECTED: "rejected"
+    REJECTED: "rejected",
+    IGNORED: "ignored"
   }
 
   constructor(options) {
@@ -48,13 +49,14 @@ class API {
   async getCfps() {
     let cfps = await this.get("/cfp");
     let now = new Date();
+    let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     cfps = cfps.map(cfp => {
       cfp.dates = `${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`;
       let cfpClosingDate = new Date(cfp.cfp_close_date);
       cfp.cfp_close_date = formatDate(cfp.cfp_close_date);
       const soonInMs = 10 * 24 * 60 * 60 * 1000;
       if (cfpClosingDate.getTime() - now.getTime() < soonInMs) cfp.closingSoon = true;
-      if (cfpClosingDate.getTime() < now.getTime()) cfp.cfpExpired = true;
+      if (cfpClosingDate.getTime() <= yesterday.getTime()) cfp.cfpExpired = true;
       
       cfp.status = this.CFP_STATUS.PENDING;
       const submitted = cfp.talks_submitted;
@@ -69,6 +71,7 @@ class API {
       if (submitted > 0 && rejected === submitted) {
         cfp.status = this.CFP_STATUS.REJECTED;
       }
+      if (cfp.cfp_ignored) cfp.status = this.CFP_STATUS.IGNORED;
       return cfp;
     });
     return cfps;
@@ -93,6 +96,11 @@ class API {
 
   async cfpRejected(cfpId) {
     let response = await this.post(`/cfp/rejected/${cfpId}`);
+    return response;
+  }
+
+  async cfpIgnored(cfpId) {
+    let response = await this.post(`/cfp/ignored/${cfpId}`);
     return response;
   }
 

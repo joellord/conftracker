@@ -27,17 +27,19 @@ const getCertificate = async () => {
 }
 
 let publicKey;
+const dbConfig = {
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  port: 3306
+};
+const pool = mysql.createPool(dbConfig);
 
 const query = (sql, params = []) => {
-  const connection = mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
-    port: 3306
-  });
+  // const connection = mysql.createConnection(dbConfig);
   let p = new Promise((resolve, reject) => {
-    connection.query(sql, params, (err, results) => {
+    pool.query(sql, params, (err, results) => {
       if (err) reject(err);
       resolve(results);
     });
@@ -98,11 +100,14 @@ const start = async () => {
       `SELECT c.*,
         COUNT(s.id) AS talks_submitted,
         SUM(s.accepted = 1) AS talks_accepted,
-        SUM(s.accepted = 0) AS talks_rejected
+        SUM(s.accepted = 0) AS talks_rejected,
+        COUNT(i.id) AS cfp_ignored
       FROM cfp c 
       LEFT JOIN cfp_submissions s 
       ON (s.cfp_id = c.id AND s.user_id = ?) 
-      WHERE c.end_date >= NOW()
+      LEFT JOIN cfp_ignored i
+      ON (i.cfp_id = c.id)
+      WHERE c.end_date >= CURDATE()
       GROUP BY c.id ORDER BY cfp_close_date`);
     let cfps = await query(sql, [req.user.sub]);
     res.send(cfps).status(200);
@@ -156,6 +161,12 @@ const start = async () => {
   app.post("/cfp/rejected/:cfpId", jwtCheck, async (req, res) => {
     console.log(`All talks rejected for cfp ${req.params.cfpId}`);
     await update("cfp_submissions", {accepted: false}, {user_id: req.user.sub, cfp_id: req.params.cfpId});
+    res.send({}).status(200);
+  });
+
+  app.post("/cfp/ignored/:cfpId", jwtCheck, async (req, res) => {
+    console.log(`Ignoring cfp ${req.params.cfpId} for user ${req.user.sub}`);
+    await insert("cfp_ignored", {cfp_id: req.params.cfpId, user_id: req.user.sub});
     res.send({}).status(200);
   });
 

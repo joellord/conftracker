@@ -12,6 +12,7 @@ import StatusAcceptedIcon from "@patternfly/react-icons/dist/js/icons/calendar-c
 import StatusRejectedIcon from "@patternfly/react-icons/dist/js/icons/times-circle-icon"
 import LinkIcon from "@patternfly/react-icons/dist/js/icons/link-icon";
 import EditIcon from "@patternfly/react-icons/dist/js/icons/edit-alt-icon";
+import IgnoreIcon from "@patternfly/react-icons/dist/js/icons/user-times-icon";
 
 const STATUS = API.CFP_STATUS;
 
@@ -39,6 +40,7 @@ export default class Cfp extends Component {
     this.state.filters[STATUS.REJECTED] = false;
     this.state.filters[STATUS.PENDING] = true;
     this.state.filters[STATUS.SUBMITTED] = true;
+    this.state.filters[STATUS.IGNORED] = false;
     this.handleModalToggle = () => {
       this.setState(({ isModalOpen }) => ({
         isModalOpen: !isModalOpen
@@ -71,6 +73,10 @@ export default class Cfp extends Component {
     }
     this.handleRejection = async (cfpId) => {
       await API.cfpRejected(cfpId);
+      this.updateCfps();
+    }
+    this.handleIgnore = async (cfpId) => {
+      await API.cfpIgnored(cfpId);
       this.updateCfps();
     }
   }
@@ -140,6 +146,7 @@ export default class Cfp extends Component {
                 <ToggleGroupItem text="Rejected" isSelected={this.state.filters.rejected} onChange={this.handleFilter} buttonId="rejected" />
                 <ToggleGroupItem text="Submitted" isSelected={this.state.filters.submitted} onChange={this.handleFilter} buttonId="submitted" />
                 <ToggleGroupItem text="Pending" isSelected={this.state.filters.pending} onChange={this.handleFilter} buttonId="pending" />
+                <ToggleGroupItem text="Ignored" isSelected={this.state.filters.ignored} onChange={this.handleFilter} buttonId="ignored" />
               </ToggleGroup>
             </Text>
           </TextContent>
@@ -147,8 +154,8 @@ export default class Cfp extends Component {
         <PageSection>
           <DataList aria-label="CFP list" isCompact>
             {this.state.cfps.map(cfp => {
-              if (!this.state.filters[cfp.status]) return;
-              if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return;
+              if (!this.state.filters[cfp.status]) return null;
+              if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return null;
               return (
                 <DataListItem id={cfp.id} key={cfp.id}>
                   <DataListItemRow>
@@ -202,6 +209,15 @@ export default class Cfp extends Component {
                             />
                           </div>
                           }
+                          {cfp.status === STATUS.IGNORED &&
+                          <div>
+                            <IgnoreIcon id={`statusIcon-${cfp.id}`} />
+                            <Tooltip
+                              content={`User ignored this CFP`}
+                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                            />
+                          </div>
+                          }
                         </div>
                       </DataListCell>
                       ]} 
@@ -226,6 +242,11 @@ export default class Cfp extends Component {
                                     Submit
                                   </Button>
                                 </Link>
+                              </ActionListItem>
+                              <ActionListItem>
+                                <Button variant="tertiary" onClick={() => this.handleIgnore(cfp.id)}>
+                                  Ignore
+                                </Button>
                               </ActionListItem>
                             </ActionList>
                           }
