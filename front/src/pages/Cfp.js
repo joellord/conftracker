@@ -260,7 +260,7 @@ export default class Cfp extends Component {
                                 </Link>
                               </ActionListItem>
                               <ActionListItem>
-                                <Button variant="warning" onClick={() => this.handleRejection(cfp.id)}>
+                                <Button variant="danger" onClick={() => this.handleRejection(cfp.id)}>
                                   Rejected
                                 </Button>
                               </ActionListItem>
