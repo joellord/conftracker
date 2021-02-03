@@ -151,7 +151,7 @@ const start = async () => {
     submissions.map(async submission => {
       await update(
         "cfp_submissions", 
-        {accepted: (req.body.approved.indexOf(submission.talk_id) > -1)}, 
+        {accepted: (req.body.approved.indexOf(submission.talk_id) > -1 ? 1 : 0)}, 
         {id: submission.id}
       );
     });
@@ -173,6 +173,17 @@ const start = async () => {
   app.get("/cfp/submitted/:cfpId", jwtCheck, async (req, res) => {
     let talks = await query("SELECT t.* FROM talk t, cfp_submissions s WHERE s.talk_id = t.id AND s.cfp_id = ? GROUP BY t.id", req.params.cfpId);
     res.send(talks).status(200);
+  });
+
+  app.get("/upcoming", jwtCheck, async (req, res) => {
+    let upcoming = await query(`
+      SELECT c.conference, s.cfp_id, s.user_id, c.start_date, c.end_date, c.url, 
+        (SELECT GROUP_CONCAT(t.title) FROM cfp_submissions b, talk t WHERE b.cfp_id = s.cfp_id AND t.id = b.talk_id AND b.accepted = 1) AS talks 
+      FROM cfp_submissions s, cfp c 
+      WHERE s.accepted = 1 AND c.id = s.cfp_id 
+      GROUP BY cfp_id, user_id, start_date, end_date, url
+    `);
+    res.send(upcoming).status(200);
   });
 
   app.get("/talk", jwtCheck, async (req, res) => {

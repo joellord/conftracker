@@ -114,6 +114,15 @@ class API {
     return data;
   }
 
+  async getUpcomingEvents() {
+    let data = await this.get(`/upcoming`);
+    data = data.map(upcoming => {
+      upcoming.dates = `${formatDate(upcoming.start_date)} - ${formatDate(upcoming.end_date)}`;
+      return upcoming;
+    });
+    return data;
+  }
+
   async postTalk(data) {
     let resp = await this.post("/talk", data);
     return resp;

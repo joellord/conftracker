@@ -72,9 +72,14 @@ class Layout extends Component {
           </NavItem>
           </Link>
           <Link to="/talk">
-          <NavItem to="/talk" itemId={1} isActive={route.indexOf("/talk") > -1} to="/talk">
+          <NavItem to="/talk" itemId={1} isActive={route.indexOf("/talk") > -1}>
             My Talks
           </NavItem>
+          </Link>
+          <Link to="/upcoming">
+            <NavItem to="/upcoming" itemId={2} isActive={route.indexOf("/upcoming") > -1}>
+              Upcoming Events
+            </NavItem>
           </Link>
         </NavList>
       </Nav>
