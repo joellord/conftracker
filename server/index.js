@@ -5,6 +5,10 @@ const bodyParser = require("body-parser");
 const jwt = require("express-jwt");
 const fetch = require("node-fetch");
 
+const Logger = require("./utils/Logger");
+
+let logger = new Logger();
+
 const app = express();
 
 app.use(cors());
@@ -121,20 +125,21 @@ const start = async () => {
   app.post("/cfp", jwtCheck, async (req, res) => {
     let data = req.body;
     data.created_by = req.user.sub;
-    console.log(data);
+    logger.info("Added new CFP");
+    logger.log(data);
     insert("cfp", data);
     res.send({}).status(200);
   });
 
   app.post("/cfp/submitted/:cfpId", jwtCheck, async (req, res) => {
     if (req.body.edit) {
-      console.log(`This is an edit, start by removing previous entries`);
+      logger.log(`This is an edit, start by removing previous entries`);
       await remove("cfp_submissions", {
         cfp_id: req.params.cfpId,
         user_id: req.user.sub
       });
     }
-    console.log(`Submitted ${req.body.submissions} to cfp ${req.params.cfpId} by user ${req.user.sub}`);
+    logger.info(`Submitted ${req.body.submissions} to cfp ${req.params.cfpId} by user ${req.user.sub}`);
     req.body.submissions.map(async submission => {
       await insert("cfp_submissions", {
         cfp_id: req.params.cfpId,
@@ -146,7 +151,7 @@ const start = async () => {
   });
 
   app.post("/cfp/approved/:cfpId", jwtCheck, async (req, res) => {
-    console.log(`Talks approved for cfp ${req.params.cfpId}: ${req.body.approved} for user ${req.user.sub}`);
+    logger.info(`Talks approved for cfp ${req.params.cfpId}: ${req.body.approved} for user ${req.user.sub}`);
     let submissions = await query("SELECT * FROM cfp_submissions WHERE cfp_id = ? AND user_id = ?", [req.params.cfpId, req.user.sub]);
     submissions.map(async submission => {
       await update(
@@ -159,13 +164,13 @@ const start = async () => {
   });
 
   app.post("/cfp/rejected/:cfpId", jwtCheck, async (req, res) => {
-    console.log(`All talks rejected for cfp ${req.params.cfpId}`);
+    logger.info(`All talks rejected for cfp ${req.params.cfpId}`);
     await update("cfp_submissions", {accepted: false}, {user_id: req.user.sub, cfp_id: req.params.cfpId});
     res.send({}).status(200);
   });
 
   app.post("/cfp/ignored/:cfpId", jwtCheck, async (req, res) => {
-    console.log(`Ignoring cfp ${req.params.cfpId} for user ${req.user.sub}`);
+    logger.info(`Ignoring cfp ${req.params.cfpId} for user ${req.user.sub}`);
     await insert("cfp_ignored", {cfp_id: req.params.cfpId, user_id: req.user.sub});
     res.send({}).status(200);
   });
@@ -187,6 +192,7 @@ const start = async () => {
   });
 
   app.get("/talk", jwtCheck, async (req, res) => {
+    logger.info("Requested list of talks");
     let talks = await query("SELECT * FROM talk WHERE created_by = ?", req.user.sub);
     res.send(talks).status(200);
   });
@@ -194,13 +200,14 @@ const start = async () => {
   app.post("/talk", jwtCheck, async (req, res) => {
     let data = req.body;
     data.created_by = req.user.sub;
-    console.log(data);
+    logger.info("Added new talk");
+    logger.log(data);
     insert("talk", data);
     res.send({}).status(200);
   });
 
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.log(`Server running on port ${PORT}`);
   });
 }
 
