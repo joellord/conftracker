@@ -127,6 +127,16 @@ class API {
     let resp = await this.post("/talk", data);
     return resp;
   }
+
+  async postProfileField(data) {
+    let resp = await this.post("/profile/field", data);
+    return resp;
+  }
+
+  async getProfile() {
+    let resp = await this.get("/profile");
+    return resp;
+  }
 }
 
 const api = new API({

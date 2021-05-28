@@ -185,8 +185,11 @@ const start = async () => {
       SELECT c.conference, s.cfp_id, s.user_id, c.start_date, c.end_date, c.url, 
         (SELECT GROUP_CONCAT(t.title) FROM cfp_submissions b, talk t WHERE b.cfp_id = s.cfp_id AND t.id = b.talk_id AND b.accepted = 1) AS talks 
       FROM cfp_submissions s, cfp c 
-      WHERE s.accepted = 1 AND c.id = s.cfp_id 
+      WHERE s.accepted = 1 
+        AND c.id = s.cfp_id 
+        AND c.end_date > NOW()
       GROUP BY cfp_id, user_id, start_date, end_date, url
+      ORDER BY c.start_date
     `);
     res.send(upcoming).status(200);
   });
@@ -204,6 +207,21 @@ const start = async () => {
     logger.log(data);
     insert("talk", data);
     res.send({}).status(200);
+  });
+
+  app.post("/profile/field", jwtCheck, async (req, res) => {
+    let data = req.body;
+    data.user_id = req.user.sub;
+    logger.info(`Adding new profile field ${data.label}: ${data.value}`);
+    insert("profile", data);
+    res.send({}).status(200);
+  });
+
+  app.get("/profile", jwtCheck, async (req, res) => {
+    const userId = req.user.sub;
+    logger.info(`Profile data requested for user ${userId}`);
+    let profile = await query("SELECT * FROM profile WHERE user_id = ?", userId);
+    res.send(profile).status(200);
   });
 
   app.listen(PORT, () => {

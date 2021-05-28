@@ -94,7 +94,9 @@ class Layout extends Component {
     ];
     const userDropdownItems = [
       <DropdownGroup key="group 2">
-        <DropdownItem key="group 2 profile">My profile</DropdownItem>
+        <DropdownItem key="group 2 profile">
+          <Link to="/profile">My Profile</Link>
+        </DropdownItem>
         <DropdownItem key="group 2 logout" onClick={() => keycloak.logout()}>Logout</DropdownItem>
       </DropdownGroup>
     ];

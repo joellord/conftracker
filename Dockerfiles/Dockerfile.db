@@ -1,0 +1,8 @@
+FROM mysql:5.7
+
+ENV MYSQL_USER=conftracker
+ENV MYSQL_PASSWORD=conftracker-back
+ENV MYSQL_DATABASE=conftracker
+ENV MYSQL_ROOT_PASSWORD=conftrackerroot
+
+COPY init.sql /docker-entrypoint-initdb.d/init.sql

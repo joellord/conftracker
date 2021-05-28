@@ -1,0 +1,72 @@
+version: "3"
+services:
+  conftracker-db:
+    image: mysql:5.7
+    environment:
+      MYSQL_USER: conftracker
+      MYSQL_PASSWORD: conftracker-back
+      MYSQL_DATABASE: conftracker
+      MYSQL_ROOT_PASSWORD: conftrackerroot
+    volumes:
+      - ./data:/var/lib/mysql:z
+  keycloak:
+    image: jboss/keycloak:12.0.1
+    environment:
+      KEYCLOAK_IMPORT: /tmp/realm-export.json
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      DB_VENDOR: mysql
+      DB_ADDR: conftracker-db
+      DB_DATABASE: conftracker
+      DB_USER: conftracker
+      DB_PASSWORD: conftracker
+    depends_on:
+      - conftracker-db
+    volumes:
+      - ./keycloak/realm-export.json:/tmp/realm-export.json:z
+    ports:
+      - 8080:8080
+  conftracker-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      MYSQL_ROOT_PASSWORD: conftrackerroot
+      PMA_HOST: conftracker-db
+    ports:
+      - 8888:80
+    depends_on:
+      - conftracker-db
+  conftracker-back:
+    image: node:14
+    environment:
+      PORT: 3001
+      MYSQL_USER: conftracker
+      MYSQL_PASSWORD: conftracker
+      MYSQL_DATABASE: conftracker
+      MYSQL_HOST: conftracker-db
+    volumes: 
+      - ./server:/opt/app:z
+    working_dir: /opt/app
+    ports:
+      - 3003:3001
+    depends_on:
+      - keycloak
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        cd /opt/app
+        npm install
+        npx nodemon .
+  conftracker-front:
+    image: node:14
+    ports:
+      - 3000:3000
+    volumes:
+      - ./front:/opt/app:z
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        cd /opt/app
+        npm install
+        npm start

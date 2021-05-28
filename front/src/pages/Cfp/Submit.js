@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import Layout from "../../components/Layout";
-import { Button, FormGroup, PageSection, PageSectionVariants, Text, TextContent, Checkbox } from "@patternfly/react-core";
+import { Button, ClipboardCopy, ClipboardCopyVariant, FormGroup, Modal, PageSection, PageSectionVariants, Text, TextContent, Checkbox } from "@patternfly/react-core";
 import { Redirect } from "react-router-dom";
 import API from "../../api";
 import Link from "../../components/Link";
+import { IdCardIcon } from "@patternfly/react-icons";
 
 export default class CfpSubmit extends Component {
   constructor(props) {
@@ -17,7 +18,9 @@ export default class CfpSubmit extends Component {
       cfp: {},
       submissions: [],
       submitted: false,
-      editing: query.has("edit")
+      editing: query.has("edit"),
+      isModalOpen: false,
+      profileData: []
     };
     this.handleSelection = (checked, event) => {
       const target = event.target;
@@ -51,6 +54,13 @@ export default class CfpSubmit extends Component {
       submissions = submissions.map(talk => talk.id);
       this.setState({ submissions });
     }
+    this.handleModalToggle = () => {
+      this.setState({isModalOpen: !this.state.isModalOpen});
+    }
+    this.updateProfile = async () => {
+      let profileData = await API.getProfile();
+      this.setState({ profileData });
+    }
   }
 
   componentDidMount() {
@@ -59,12 +69,15 @@ export default class CfpSubmit extends Component {
     if (this.state.editing) {
       this.updateSelection(this.state.cfpId);
     }
+    this.updateProfile();
   }
 
   render() {
     if (this.state.submitted) {
       return <Redirect to='/cfp' />
     }
+
+    const { isModalOpen, profileData } = this.state;
 
     return (
       <Layout>
@@ -73,6 +86,28 @@ export default class CfpSubmit extends Component {
             <Text component="h1">Talk Submission for {this.state.cfp.conference}</Text>
             <Text component="p">
               <Link to={this.state.cfp.cfp_url} external>CFP URL</Link>
+            </Text>
+            <Text>
+              <IdCardIcon onClick={this.handleModalToggle} />
+              <Modal 
+                width={"50%"} 
+                title="CFP Copy&amp;Paste Data" 
+                isOpen={isModalOpen} 
+                onClose={this.handleModalToggle}
+                actions={[
+                  <Button key="close" variant="link" onClick={this.handleModalToggle}>Close</Button>
+                ]}>
+                {profileData.map(field => {
+                  return(
+                    <React.Fragment>
+                      {field.label}
+                      <ClipboardCopy isReadOnly variant={ClipboardCopyVariant.expansion}>
+                        {field.value}
+                      </ClipboardCopy>
+                    </React.Fragment>
+                  )
+                })}
+              </Modal>
             </Text>
             <Text component="p">
               Which talks were submitted?

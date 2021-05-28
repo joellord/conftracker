@@ -10,6 +10,7 @@ import CfpSubmit from "../pages/Cfp/Submit";
 import CfpApproved from "../pages/Cfp/Approved";
 import Talk from "../pages/Talk";
 import Upcoming from "../pages/Upcoming";
+import Profile from "../pages/Profile";
 
 export const AppRouter = () => {
   const [, initialized] = useKeycloak();
@@ -26,6 +27,7 @@ export const AppRouter = () => {
         <PrivateRoute roles={['user']} path="/cfp" component={Cfp} />
         <PrivateRoute roles={['user']} path="/talk" component={Talk} />
         <PrivateRoute roles={['user']} path="/upcoming" component={Upcoming} />
+        <PrivateRoute roles={['user']} path="/profile" component={Profile} />
       </Switch>
     </BrowserRouter>
   )

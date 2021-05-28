@@ -1,0 +1,171 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conftracker-back
+  labels:
+    app: conftracker
+    component: back
+spec:
+  selector:
+    matchLabels:
+      component: back
+  template:
+    metadata:
+      labels:
+        app: conftracker
+        component: back
+    spec:
+      containers:
+      - name: conftracker-back
+        image: joellord/conftracker-back
+        env:
+          - name: PORT
+            value: "3001"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conftracker-front
+  labels:
+    app: conftracker
+    component: front
+spec:
+  selector:
+    matchLabels:
+      component: front
+  template:
+    metadata:
+      labels:
+        app: conftracker
+        component: front
+    spec:
+      containers:
+      - name: conftracker-front
+        image: joellord/conftracker-front
+        env:
+          - name: BASE_URL
+            value: "/api"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conftracker-db
+  labels:
+    app: conftracker
+    component: db
+spec:
+  selector:
+    matchLabels:
+      component: db
+  template:
+    metadata:
+      labels:
+        app: conftracker
+        component: db
+    spec:
+      containers:
+      - name: conftracker-db
+        image: joellord/conftracker-db
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: conftracker
+    component: keycloak
+spec:
+  selector:
+    matchLabels:
+      component: keycloak
+  template:
+    metadata:
+      labels:
+        app: conftracker
+        component: keycloak
+    spec:
+      containers:
+      - name: keycloak
+        image: joellord/conftracker-keycloak
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: conftracker-back
+  labels:
+    app: conftracker
+    component: back
+spec:
+  selector:
+    app: conftracker
+    component: back
+  ports:
+  - port: 3001
+    targetPort: 80
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: conftracker-front
+  labels:
+    app: conftracker
+    component: front
+spec:
+  selector:
+    app: conftracker
+    component: front
+  ports:
+  - port: 8080
+    targetPort: 80
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: conftracker-db
+  labels:
+    app: conftracker
+    component: db
+spec:
+  selector:
+    app: conftracker
+    component: db
+  ports:
+  - port: 3006
+    targetPort: 3306
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    app: conftracker
+    component: keycloak
+spec:
+  selector:
+    app: conftracker
+    component: keycloak
+  ports:
+  - port: 8080
+    targetPort: 80
