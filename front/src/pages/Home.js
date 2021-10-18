@@ -21,7 +21,7 @@ const Home = () => {
 
       {isAuthenticated && api.setTokens(getAccessTokenSilently(), getIdTokenClaims()) ?
         <div><Redirect to="/cfp" /></div>
-        : <h2></h2>
+        : <h2>Error logging in</h2>
       }
 {/* 
       <Button variant="primary" onClick={() => keycloak.login()}>Login</Button> */}
