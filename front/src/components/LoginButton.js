@@ -6,7 +6,7 @@ import { Button } from "@patternfly/react-core";
 const LoginButton = () => {
   const { loginWithRedirect } = useAuth0();
 
-  return <Button onClick={() => loginWithRedirect()} onRedirect={() => alert("red")}>Log In</Button>;
+  return <Button onClick={() => loginWithRedirect()}>Log In</Button>;
 };
 
 export default LoginButton;

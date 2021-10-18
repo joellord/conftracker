@@ -18,26 +18,20 @@ class API {
   }
 
   async setTokens(accessToken, idToken) {
-    console.log(`Setting tokens ${accessToken} ${idToken}`)
     let tokensPromises = await Promise.all([accessToken, idToken]);
     this.tokens.accessToken = tokensPromises[0];
     this.tokens.idToken = tokensPromises[1].__raw;
     localStorage.setItem("tokens", JSON.stringify(this.tokens));
-    debugger;
     return true;
   }
 
   getAccessToken() {
     let tokens = localStorage.getItem("tokens");
-    debugger;
     tokens = JSON.parse(tokens);
     return tokens.accessToken;
   }
 
   async get(url) {
-    console.log(this.tokens);
-    debugger;
-    console.log("GET request with bearer token", this.getAccessToken())
     if (url.substr(0, 1) !== "/") url = `/${url}`;
     let data = await fetch(`${this.BASE_URL}${url}`, {
       headers: {

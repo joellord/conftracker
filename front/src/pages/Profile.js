@@ -74,7 +74,6 @@ export default class Cfp extends Component {
                       <FormSelect
                         value={modal.fieldType}
                         onChange={this.onChange}
-                        id="horzontal-form-title"
                         name="horizontal-form-title"
                         aria-label="Field Type"
                         id="fieldType"

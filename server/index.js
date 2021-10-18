@@ -17,21 +17,6 @@ app.use(bodyParser.json());
 
 const PORT = process.env.PORT;
 
-const getCertificate = async () => {
-  const KEYCLOAK_URL = "http://keycloak:8080";
-  const REALM = "myrealm";
-  const openIdConfigUrl = `${KEYCLOAK_URL}/auth/realms/${REALM}/.well-known/openid-configuration`;
-  let config = await fetch(openIdConfigUrl).then(resp => resp.json());
-  let jwksUri = config.jwks_uri;
-  let certData = await fetch(jwksUri).then(resp => resp.json()).then(certData => {
-    certData = certData.keys[0];
-    let cert = `-----BEGIN CERTIFICATE-----\n${certData.x5c[0]}\n-----END CERTIFICATE-----`;
-    return cert;
-  });
-  return certData;
-}
-
-let publicKey;
 const dbConfig = {
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
@@ -109,10 +94,6 @@ const remove = async (table, where) => {
 }
 
 const start = async () => {
-  publicKey= await getCertificate();
-
-
-
   app.get("/", (req, res) => {
     res.send("Hello").status(200);
   });

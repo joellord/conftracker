@@ -63,7 +63,7 @@ class Layout extends Component {
 
   render() {
     // let keycloak = this.props.keycloak;
-    const { user, isAuthenticated, isLoading } = this.props.auth0;
+    const { user } = this.props.auth0;
     
     const { isDropdownOpen, isKebabDropdownOpen, route } = this.state;
     const PageNav = (

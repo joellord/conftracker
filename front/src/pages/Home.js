@@ -1,5 +1,5 @@
 import React from "react";
-import { Page, PageHeader, PageSection, PageSectionVariants, Button } from "@patternfly/react-core";
+import { Page, PageHeader, PageSection, PageSectionVariants } from "@patternfly/react-core";
 import { Redirect } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import LoginButton from "../components/LoginButton";
@@ -11,7 +11,7 @@ const Home = () => {
     <PageHeader logo="#" />
   )
   
-  const { user, isAuthenticated, isLoading, getAccessTokenSilently, getIdTokenClaims } = useAuth0();
+  const { isAuthenticated, getAccessTokenSilently, getIdTokenClaims } = useAuth0();
 
   return (
     <Page header={Header}>
