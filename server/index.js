@@ -3,6 +3,7 @@ const mysql = require("mysql");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const jwt = require("express-jwt");
+const jwks = require("jwks-rsa");
 const fetch = require("node-fetch");
 
 const Logger = require("./utils/Logger");
@@ -39,6 +40,23 @@ const dbConfig = {
   port: 3306
 };
 const pool = mysql.createPool(dbConfig);
+
+const AUTH0_DOMAIN = "conf-tracker.auth0.com";
+const AUTH0_AUDIENCE = "https://conftracker.com";
+const jwtCheck = jwt({
+  // Dynamically provide a signing key based on the kid in the header and the signing keys provided by the JWKS endpoint
+  secret: jwks.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: `https://${AUTH0_DOMAIN}/.well-known/jwks.json`
+  }),
+
+  // Validate the audience and the issuer
+  audience: AUTH0_AUDIENCE, //replace with your API's audience, available at Dashboard > APIs
+  issuer: `https://${AUTH0_DOMAIN}/`,
+  algorithms: [ 'RS256' ]
+});
 
 const query = (sql, params = []) => {
   // const connection = mysql.createConnection(dbConfig);
@@ -93,8 +111,8 @@ const remove = async (table, where) => {
 const start = async () => {
   publicKey= await getCertificate();
 
-  let jwtCheck = jwt({secret: publicKey, algorithms: ['RS256']});
-  
+
+
   app.get("/", (req, res) => {
     res.send("Hello").status(200);
   });

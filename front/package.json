@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@auth0/auth0-react": "^1.8.0",
     "@patternfly/patternfly": "^4.70.2",
     "@patternfly/react-core": "^4.84.4",
     "@patternfly/react-table": "^4.19.45",

@@ -22,7 +22,9 @@ import Link from "./Link";
 import CogIcon from '@patternfly/react-icons/dist/js/icons/cog-icon';
 import HelpIcon from '@patternfly/react-icons/dist/js/icons/help-icon';
 import imgAvatar from '@patternfly/react-core/src/components/Avatar/examples/avatarImg.svg';
-import { withKeycloak } from "react-keycloak";
+import { withAuth0 } from '@auth0/auth0-react';
+import LogoutButton from "./LogoutButton";
+// import { withKeycloak } from "react-keycloak";
 
 class Layout extends Component {
   constructor(props) {
@@ -60,7 +62,8 @@ class Layout extends Component {
   }
 
   render() {
-    let keycloak = this.props.keycloak;
+    // let keycloak = this.props.keycloak;
+    const { user, isAuthenticated, isLoading } = this.props.auth0;
     
     const { isDropdownOpen, isKebabDropdownOpen, route } = this.state;
     const PageNav = (
@@ -97,7 +100,8 @@ class Layout extends Component {
         <DropdownItem key="group 2 profile">
           <Link to="/profile">My Profile</Link>
         </DropdownItem>
-        <DropdownItem key="group 2 logout" onClick={() => keycloak.logout()}>Logout</DropdownItem>
+        {/* <DropdownItem key="group 2 logout" onClick={() => keycloak.logout()}>Logout</DropdownItem> */}
+        <LogoutButton />
       </DropdownGroup>
     ];
     const headerTools = (
@@ -142,7 +146,7 @@ class Layout extends Component {
               position="right"
               onSelect={this.onDropdownSelect}
               isOpen={isDropdownOpen}
-              toggle={<DropdownToggle onToggle={this.onDropdownToggle}>{keycloak.idTokenParsed.name || keycloak.idTokenParsed.preferred_username}</DropdownToggle>}
+              toggle={<DropdownToggle onToggle={this.onDropdownToggle}>{user.name || user.email}</DropdownToggle>}
               dropdownItems={userDropdownItems}
             />
           </PageHeaderToolsItem>
@@ -170,4 +174,5 @@ class Layout extends Component {
   }
 }
 
-export default withKeycloak(Layout);
+// export default withKeycloak(Layout);
+export default withAuth0(Layout);

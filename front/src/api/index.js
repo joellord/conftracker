@@ -1,7 +1,6 @@
 import { formatDate } from "../utils/helpers";
 
 const config = require("../config.json");
-const keycloak = require("../keycloak");
 
 class API {
   BASE_URL;
@@ -15,13 +14,34 @@ class API {
 
   constructor(options) {
     this.BASE_URL = options.BASE_URL;
+    this.tokens = {};
+  }
+
+  async setTokens(accessToken, idToken) {
+    console.log(`Setting tokens ${accessToken} ${idToken}`)
+    let tokensPromises = await Promise.all([accessToken, idToken]);
+    this.tokens.accessToken = tokensPromises[0];
+    this.tokens.idToken = tokensPromises[1].__raw;
+    localStorage.setItem("tokens", JSON.stringify(this.tokens));
+    debugger;
+    return true;
+  }
+
+  getAccessToken() {
+    let tokens = localStorage.getItem("tokens");
+    debugger;
+    tokens = JSON.parse(tokens);
+    return tokens.accessToken;
   }
 
   async get(url) {
+    console.log(this.tokens);
+    debugger;
+    console.log("GET request with bearer token", this.getAccessToken())
     if (url.substr(0, 1) !== "/") url = `/${url}`;
     let data = await fetch(`${this.BASE_URL}${url}`, {
       headers: {
-        "Authorization": `Bearer ${keycloak.default.token}`
+        "Authorization": `Bearer ${this.getAccessToken()}`
       }
     }).then(resp=>resp.json());
     return data;
@@ -34,7 +54,7 @@ class API {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${keycloak.default.token}`
+        "Authorization": `Bearer ${this.getAccessToken()}`
       },
       body: JSON.stringify(data)
     }).then(resp=>resp.json());

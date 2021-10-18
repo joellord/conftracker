@@ -1,5 +1,3 @@
-import { useKeycloak } from "react-keycloak";
-
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 
@@ -13,10 +11,6 @@ import Upcoming from "../pages/Upcoming";
 import Profile from "../pages/Profile";
 
 export const AppRouter = () => {
-  const [, initialized] = useKeycloak();
-  if (!initialized) {
-    return <div>Loading...</div>
-  }
 
   return (
     <BrowserRouter>
