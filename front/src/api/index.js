@@ -57,7 +57,7 @@ class API {
 
   async getCfp(id) {
     let data = await this.get(`/cfp/${id}`);
-    return data[0];
+    return data;
   }
 
   async getCfps() {
@@ -74,8 +74,8 @@ class API {
       
       cfp.status = this.CFP_STATUS.PENDING;
       const submitted = cfp.talks_submitted;
-      const accepted = (cfp.talks_accepted === null) ? 0 : cfp.talks_accepted;
-      const rejected = (cfp.talks_rejected === null) ? 0 : cfp.talks_rejected
+      const accepted = (!cfp.talks_accepted) ? 0 : cfp.talks_accepted;
+      const rejected = (!cfp.talks_rejected) ? 0 : cfp.talks_rejected;
       if (submitted > 0 && accepted === 0 && rejected === 0) {
         cfp.status = this.CFP_STATUS.SUBMITTED;
       }

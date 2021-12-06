@@ -10,13 +10,15 @@ export default class CfpSubmit extends Component {
     this.state = {
       talks: [],
       cfpId: this.props.match.params.cfpId,
-      cfp: {},
+      cfp: {
+        conference:""
+      },
       approved: [],
       submitted: false
     };
     this.handleSelection = (checked, event) => {
       const target = event.target;
-      const talkId = parseInt(target.name.replace("talk-", ""));
+      const talkId = target.name.replace("talk-", "");
       const index = this.state.approved.indexOf(talkId);
       let approved = [...this.state.approved];
 
@@ -33,12 +35,12 @@ export default class CfpSubmit extends Component {
       this.setState({submitted: true});
     }
     this.updateTalks = async (cfpId) => {
-      let talks = await API.getSubmittedTalks(cfpId);
-      this.setState({ talks });
+      // let talks = await API.getSubmittedTalks(cfpId);
+      // this.setState({ talks });
     }
     this.updateCfp = async (id) => {
       let cfp = await API.getCfp(id);
-      this.setState({ cfp });
+      this.setState({ cfp, talks: cfp.mySubmissions });
     }
   }
 
@@ -68,14 +70,15 @@ export default class CfpSubmit extends Component {
         <PageSection>
           <FormGroup fieldId="approved">
           {this.state.talks.map(talk => {
+            console.log(talk);
             return(
               <Checkbox 
-                id={talk.id} 
+                id={talk.title} 
                 label={talk.title} 
                 description={talk.abstract} 
                 onChange={this.handleSelection}
-                name={`talk-${talk.id}`}
-                isChecked={this.state.approved.indexOf(talk.id) > -1}
+                name={`talk-${talk.title}`}
+                isChecked={this.state.approved.indexOf(talk.title) > -1}
               />
             )
           })}

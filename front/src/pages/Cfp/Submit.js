@@ -38,6 +38,10 @@ export default class CfpSubmit extends Component {
       this.setState({ submissions });
     }
     this.submitTalks = async () => {
+      // let talkSubmissions = [];
+      // this.state.submissions.map(index => {
+      //   talkSubmissions.push(this.state.talks[index]);
+      // });
       await API.submitTalks(this.state.cfpId, this.state.submissions, this.state.editing);
       this.setState({ submitted: true });
     }
@@ -51,14 +55,15 @@ export default class CfpSubmit extends Component {
     }
     this.updateSelection = async (id) => {
       let submissions = await API.getSubmittedTalks(id)
-      submissions = submissions.map(talk => talk.id);
+      submissions = submissions.map(talk => talk._id);
       this.setState({ submissions });
     }
     this.handleModalToggle = () => {
       this.setState({isModalOpen: !this.state.isModalOpen});
     }
     this.updateProfile = async () => {
-      let profileData = await API.getProfile();
+      let profile = await API.getProfile();
+      let profileData = profile.profileFields;
       this.setState({ profileData });
     }
   }
@@ -118,15 +123,15 @@ export default class CfpSubmit extends Component {
         </PageSection>
         <PageSection>
           <FormGroup fieldId="submissions">
-            {this.state.talks.map(talk => {
+            {this.state.talks.map((talk,index) => {
               return (
                 <Checkbox
-                  id={talk.id}
+                  id={index}
                   label={talk.title}
                   description={talk.abstract}
                   onChange={this.handleSelection}
-                  name={`talk-${talk.id}`}
-                  isChecked={this.state.submissions.indexOf(talk.id) > -1}
+                  name={`talk-${index}`}
+                  isChecked={this.state.submissions.indexOf(index) > -1}
                 />
               )
             })}

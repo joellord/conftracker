@@ -84,7 +84,7 @@ export default class Cfp extends Component {
   tableActions(rowData, { rowIndex }) {
     return [
       {
-        title: <a href={`/cfp/submit/${rowData.id}`}>Submitted</a>,
+        title: <a href={`/cfp/submit/${rowData._id}`}>Submitted</a>,
       },
       {
         title: rowData.cfpLink ? <a href={rowData.cfpLink} target="_blank" rel="noreferrer">CFP</a> : "No CFP Link"
@@ -154,10 +154,10 @@ export default class Cfp extends Component {
         <PageSection>
           <DataList aria-label="CFP list" isCompact>
             {this.state.cfps.map(cfp => {
-              if (!this.state.filters[cfp.status]) return null;
-              if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return null;
+              // if (!this.state.filters[cfp.status]) return null;
+              // if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return null;
               return (
-                <DataListItem id={cfp.id} key={cfp.id}>
+                <DataListItem id={cfp._id} key={cfp._id}>
                   <DataListItemRow>
                     <DataListItemCells dataListCells={[
                       <DataListCell key="conference">
@@ -168,53 +168,53 @@ export default class Cfp extends Component {
                         <div>
                           {cfp.status === STATUS.PENDING && 
                           <div>
-                          <StatusPendingIcon id={`statusIcon-${cfp.id}`} />
+                          <StatusPendingIcon id={`statusIcon-${cfp._id}`} />
                           <Tooltip 
                             content="No talks submitted yet"
-                            reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                            reference={() => document.getElementById(`statusIcon-${cfp._id}`)}
                           />
                           </div>
                           }
                           {cfp.status === STATUS.SUBMITTED &&
                           <div>
-                            <StatusSubmittedIcon id={`statusIcon-${cfp.id}`} />
+                            <StatusSubmittedIcon id={`statusIcon-${cfp._id}`} />
                             <Tooltip
                               content={`Submitted ${cfp.talks_submitted} talk${cfp.talks_submitted > 1 ? "s" : ""}`}
-                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                              reference={() => document.getElementById(`statusIcon-${cfp._id}`)}
                             />{` | `}
-                            <Link to={`cfp/submit/${cfp.id}?edit`}>
-                              <EditIcon id={`editIcon-${cfp.id}`} />
+                            <Link to={`cfp/submit/${cfp._id}?edit`}>
+                              <EditIcon id={`editIcon-${cfp._id}`} />
                               <Tooltip
                                 content={`Edit submissions`}
-                                reference={() => document.getElementById(`editIcon-${cfp.id}`)}
+                                reference={() => document.getElementById(`editIcon-${cfp._id}`)}
                               />
                             </Link>
                           </div>
                           }
                           {cfp.status === STATUS.ACCEPTED &&
                           <div>
-                            <StatusAcceptedIcon id={`statusIcon-${cfp.id}`} />
+                            <StatusAcceptedIcon id={`statusIcon-${cfp._id}`} />
                             <Tooltip
                               content={`${cfp.talks_accepted} talk${cfp.talks_submitted > 1 ? "s" : ""} accepted`}
-                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                              reference={() => document.getElementById(`statusIcon-${cfp._id}`)}
                             />
                           </div>
                           }
                           {cfp.status === STATUS.REJECTED &&
                           <div>
-                            <StatusRejectedIcon id={`statusIcon-${cfp.id}`} />
+                            <StatusRejectedIcon id={`statusIcon-${cfp._id}`} />
                             <Tooltip
                               content={`All talks were rejected`}
-                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                              reference={() => document.getElementById(`statusIcon-${cfp._id}`)}
                             />
                           </div>
                           }
                           {cfp.status === STATUS.IGNORED &&
                           <div>
-                            <IgnoreIcon id={`statusIcon-${cfp.id}`} />
+                            <IgnoreIcon id={`statusIcon-${cfp._id}`} />
                             <Tooltip
                               content={`User ignored this CFP`}
-                              reference={() => document.getElementById(`statusIcon-${cfp.id}`)}
+                              reference={() => document.getElementById(`statusIcon-${cfp._id}`)}
                             />
                           </div>
                           }
@@ -237,14 +237,14 @@ export default class Cfp extends Component {
                           {cfp.status === STATUS.PENDING && 
                             <ActionList>
                               <ActionListItem>
-                                <Link to={`/cfp/submit/${cfp.id}`}>
+                                <Link to={`/cfp/submit/${cfp._id}`}>
                                   <Button variant="secondary">
                                     Submit
                                   </Button>
                                 </Link>
                               </ActionListItem>
                               <ActionListItem>
-                                <Button variant="tertiary" onClick={() => this.handleIgnore(cfp.id)}>
+                                <Button variant="tertiary" onClick={() => this.handleIgnore(cfp._id)}>
                                   Ignore
                                 </Button>
                               </ActionListItem>
@@ -253,14 +253,14 @@ export default class Cfp extends Component {
                           {cfp.status === STATUS.SUBMITTED &&
                             <ActionList>
                               <ActionListItem>
-                                <Link to={`/cfp/approved/${cfp.id}`}>
+                                <Link to={`/cfp/approved/${cfp._id}`}>
                                   <Button variant="primary">
                                     Approved
                                   </Button>
                                 </Link>
                               </ActionListItem>
                               <ActionListItem>
-                                <Button variant="danger" onClick={() => this.handleRejection(cfp.id)}>
+                                <Button variant="danger" onClick={() => this.handleRejection(cfp._id)}>
                                   Rejected
                                 </Button>
                               </ActionListItem>

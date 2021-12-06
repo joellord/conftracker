@@ -93,19 +93,19 @@ export default class Cfp extends Component {
         </PageSection>
         <PageSection>
           <Accordion>
-            {this.state.talks.map(talk => {
+            {this.state.talks.map((talk, index) => {
               return(
-              <AccordionItem key={talk.id}>
+              <AccordionItem key={index}>
                 <AccordionToggle 
-                  onClick={() => {onToggle(talk.id)}}
-                  isExpanded={this.state.expanded.indexOf(talk.id) > -1}
-                  id={talk.id}
+                  onClick={() => {onToggle(index)}}
+                  isExpanded={this.state.expanded.indexOf(index) > -1}
+                  id={index}
                 >
                   {talk.title}
                 </AccordionToggle>
                 <AccordionContent
-                  id={`${talk.id}-expanded`}
-                  isHidden={this.state.expanded.indexOf(talk.id) === -1}
+                  id={`${index}-expanded`}
+                  isHidden={this.state.expanded.indexOf(index) === -1}
                 >
                   <p>
                     {talk.abstract}
