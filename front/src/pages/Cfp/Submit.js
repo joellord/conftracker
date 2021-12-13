@@ -38,10 +38,6 @@ export default class CfpSubmit extends Component {
       this.setState({ submissions });
     }
     this.submitTalks = async () => {
-      // let talkSubmissions = [];
-      // this.state.submissions.map(index => {
-      //   talkSubmissions.push(this.state.talks[index]);
-      // });
       await API.submitTalks(this.state.cfpId, this.state.submissions, this.state.editing);
       this.setState({ submitted: true });
     }

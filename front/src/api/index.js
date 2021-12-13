@@ -2,6 +2,7 @@ import { formatDate } from "../utils/helpers";
 import * as Realm from "realm-web";
 
 const app = new Realm.App({ id: "application-0-konnn" });
+const ObjectId = Realm.BSON.ObjectId;
 
 const config = require("../config.json");
 
@@ -88,8 +89,25 @@ class API {
   }
 
   async getCfp(id) {
-    let data = await this.get(`/cfp/${id}`);
-    return data;
+    let cfpCollection = this.getCollection("cfps");
+    let cfp = await cfpCollection.aggregate([{
+      $match: {_id: ObjectId(id)}
+    }, {
+      '$addFields': {
+        'mySubmissions': {
+          '$filter': {
+            'input': '$submissions', 
+            'as': 'submission', 
+            'cond': {
+              '$eq': [
+                '$$submission.user_id', this.getUserId()
+              ]
+            }
+          }
+        }
+      }
+    }]);
+    return cfp[0];
   }
 
   async getCfps() {
@@ -228,8 +246,11 @@ class API {
   }
 
   async getTalks() {
-    let data = await this.get("/talk");
-    return data;
+    let profileCollection = this.getCollection("profile");
+    let profile = await profileCollection.findOne({
+      user_id: this.getUserId()
+    });
+    return profile.talks;
   }
 
   async getSubmittedTalks(cfpId) {
@@ -257,8 +278,11 @@ class API {
   }
 
   async getProfile() {
-    let resp = await this.get("/profile");
-    return resp;
+    let profileCollection = this.getCollection("profile");
+    let profile = await profileCollection.findOne({
+      user_id: this.getUserId()
+    });
+    return profile;
   }
 }
 
