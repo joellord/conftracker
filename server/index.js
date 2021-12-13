@@ -17,7 +17,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const PORT = process.env.PORT || 3003;
-const MONGO_URL = "mongodb+srv://conftracker:conftracker@cluster0.mydmq.mongodb.net/conference";
+const MONGO_URL = "mongodb+srv://conftracker:Conftracker@cluster0.mydmq.mongodb.net/conference";
 const dbConfig = {
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
@@ -308,6 +308,15 @@ const start = async () => {
       let result = await cfpCollection.updateOne(filter, update, {arrayFilters});
     });
 
+    // Set all other talks as rejected
+    filter = {
+      _id: ObjectId(req.params.cfpId), 
+      "submissions.user_id": req.user.sub
+    };
+    update = {"$set": {"submissions.$[element].status": "rejected"}};
+    arrayFilters = [{"element.status": "submitted"}]
+    await cfpCollection.updateOne(filter, update, {arrayFilters});
+
     res.send({}).status(200);
   });
 
@@ -336,16 +345,113 @@ const start = async () => {
   });
 
   app.get("/upcoming", jwtCheck, async (req, res) => {
-    let upcoming = await query(`
-      SELECT c.conference, s.cfp_id, s.user_id, c.start_date, c.end_date, c.url, 
-        (SELECT GROUP_CONCAT(t.title) FROM cfp_submissions b, talk t WHERE b.cfp_id = s.cfp_id AND t.id = b.talk_id AND b.accepted = 1) AS talks 
-      FROM cfp_submissions s, cfp c 
-      WHERE s.accepted = 1 
-        AND c.id = s.cfp_id 
-        AND c.end_date > NOW()
-      GROUP BY cfp_id, user_id, start_date, end_date, url
-      ORDER BY c.start_date
-    `);
+    // let upcoming = await query(`
+    //   SELECT c.conference, s.cfp_id, s.user_id, c.start_date, c.end_date, c.url, 
+    //     (SELECT GROUP_CONCAT(t.title) FROM cfp_submissions b, talk t WHERE b.cfp_id = s.cfp_id AND t.id = b.talk_id AND b.accepted = 1) AS talks 
+    //   FROM cfp_submissions s, cfp c 
+    //   WHERE s.accepted = 1 
+    //     AND c.id = s.cfp_id 
+    //     AND c.end_date > NOW()
+    //   GROUP BY cfp_id, user_id, start_date, end_date, url
+    //   ORDER BY c.start_date
+    // `);
+    let pipeline = [
+      {
+        '$match': {
+          'end_date': {
+            '$gt': new Date('Tue, 07 Dec 2021 12:29:41 GMT')
+          }
+        }
+      }, {
+        '$addFields': {
+          'mySubmissions': {
+            '$filter': {
+              'input': '$submissions', 
+              'as': 'submission', 
+              'cond': {
+                '$eq': [
+                  '$$submission.user_id', 'google-oauth2|102260477336632272051'
+                ]
+              }
+            }
+          }
+        }
+      }, {
+        '$match': {
+          'mySubmissions.status': 'accepted'
+        }
+      }, {
+        '$addFields': {
+          'talks_accepted': {
+            '$filter': {
+              'input': '$mySubmissions', 
+              'as': 'submission', 
+              'cond': {
+                '$eq': [
+                  '$$submission.status', 'accepted'
+                ]
+              }
+            }
+          }
+        }
+      }, {
+        '$addFields': {
+          'talk_titles': {
+            '$map': {
+              'input': '$talks_accepted', 
+              'as': 's', 
+              'in': '$$s.title'
+            }
+          }
+        }
+      }, {
+        '$addFields': {
+          'talks': {
+            '$reduce': {
+              'input': '$talk_titles', 
+              'initialValue': '', 
+              'in': {
+                '$cond': {
+                  'if': {
+                    '$eq': [
+                      {
+                        '$indexOfArray': [
+                          '$talk_titles', '$$this'
+                        ]
+                      }, 0
+                    ]
+                  }, 
+                  'then': {
+                    '$concat': [
+                      '$$value', '$$this'
+                    ]
+                  }, 
+                  'else': {
+                    '$concat': [
+                      '$$value', ', ', '$$this'
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, {
+        '$sort': {
+          'start_date': 1
+        }
+      }, {
+        '$project': {
+          '_id': 1, 
+          'conference': 1, 
+          'start_date': 1, 
+          'end_date': 1, 
+          'url': 1, 
+          'talks': 1
+        }
+      }
+    ];
+    let upcoming = await cfpCollection.aggregate(pipeline).toArray();
     res.send(upcoming).status(200);
   });
 

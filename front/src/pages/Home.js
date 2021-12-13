@@ -19,9 +19,8 @@ const Home = () => {
         <h1>Welcome!</h1>
         <p>Please login</p>
 
-      {isAuthenticated && api.setTokens(getAccessTokenSilently(), getIdTokenClaims()) ?
+      {isAuthenticated && api.setTokens(getAccessTokenSilently(), getIdTokenClaims()) && 
         <div><Redirect to="/cfp" /></div>
-        : <h2>Error logging in</h2>
       }
 
       <LoginButton />

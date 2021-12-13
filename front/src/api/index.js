@@ -67,6 +67,12 @@ class API {
     cfps = cfps.map(cfp => {
       cfp.dates = `${formatDate(cfp.start_date)} - ${formatDate(cfp.end_date)}`;
       let cfpClosingDate = new Date(cfp.cfp_close_date);
+      
+      //Ignore expired CFPs with no submissions
+      if (cfpClosingDate.getTime() < yesterday.getTime() && !cfp.talks_submitted) {
+        cfp.cfp_ignored = true;
+      }
+
       cfp.cfp_close_date = formatDate(cfp.cfp_close_date);
       const soonInMs = 10 * 24 * 60 * 60 * 1000;
       if (cfpClosingDate.getTime() - now.getTime() < soonInMs) cfp.closingSoon = true;
