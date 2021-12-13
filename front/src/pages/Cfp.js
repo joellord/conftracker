@@ -140,7 +140,7 @@ export default class Cfp extends Component {
                   </Form>
                 </Modal>
             </Text>
-            <Text component="p" align="left">
+            <Text component="div" align="left">
               <ToggleGroup aria-label="Filters">
                 <ToggleGroupItem text="Accepted" isSelected={this.state.filters.accepted} onChange={this.handleFilter} buttonId="accepted" />
                 <ToggleGroupItem text="Rejected" isSelected={this.state.filters.rejected} onChange={this.handleFilter} buttonId="rejected" />
@@ -223,7 +223,7 @@ export default class Cfp extends Component {
                       ]} 
                     />
                     <DataListItemCells dataListCells={[
-                      <DataListCell>
+                      <DataListCell key={cfp._id}>
                         <div>
                           <Link to={cfp.url} external><LinkIcon /></Link>
                           {" | "}

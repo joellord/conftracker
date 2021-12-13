@@ -24,17 +24,9 @@ class API {
     const redirectUri = "http://localhost:3000";
     const credentials = Realm.Credentials.google(redirectUri, {openId: true});
 
-    // Calling logIn() opens a Google authentication screen in a new window.
     app.logIn(credentials).then(user => {
-    // The logIn() promise will not resolve until you call `handleAuthRedirect()`
-    // from the new window after the user has successfully authenticated.
       console.log(`Logged in with id: ${user.id}`);
-    })
-
-    // When the user is redirected back to your app, handle the redirect to
-    // save the user's access token and close the redirect window. This
-    // returns focus to the original application window and automatically
-    // logs the user in.
+    });
     Realm.handleAuthRedirect();
   }
 
@@ -48,17 +40,20 @@ class API {
     return user;
   }
 
+  getUserId() {
+    return app.currentUser.id;
+  }
+
   userLogout() {
     app.currentUser.logOut();
   }
 
-  // async setTokens(accessToken, idToken) {
-  //   let tokensPromises = await Promise.all([accessToken, idToken]);
-  //   this.tokens.accessToken = tokensPromises[0];
-  //   this.tokens.idToken = tokensPromises[1].__raw;
-  //   localStorage.setItem("tokens", JSON.stringify(this.tokens));
-  //   return true;
-  // }
+  getCollection(collectionName) {
+    let user = this.getUserProfile();
+    let mongodb = user.mongoClient("mongodb-atlas");
+    let collection = mongodb.db(config.DB_NAME).collection(collectionName);
+    return collection;
+  }
 
   getAccessToken() {
     // let tokens = localStorage.getItem("tokens");
@@ -98,7 +93,67 @@ class API {
   }
 
   async getCfps() {
-    let cfps = await this.get("/cfp");
+    // let cfps = await this.get("/cfp");
+    let pipeline = [
+      {
+        '$match': {
+          'end_date': {'$gt': new Date()}
+        }
+      },
+      {
+        '$sort': { 'start_date': 1 }
+      },
+      {
+        '$addFields': {
+          'mySubmissions': {
+            '$filter': {
+              'input': '$submissions', 
+              'as': 'submission', 
+              'cond': {
+                '$eq': [
+                  '$$submission.user_id', this.getUserId()
+                ]
+              }
+            }
+          }
+        }
+      }, {
+        '$addFields': {
+          'talks_accepted': {
+            '$size': {
+              '$filter': {
+                'input': '$mySubmissions', 
+                'as': 'submission', 
+                'cond': {
+                  '$eq': [
+                    '$$submission.status', 'accepted'
+                  ]
+                }
+              }
+            }
+          },
+          'talks_submitted': {
+            '$size': "$mySubmissions"
+          },
+          'talks_rejected': {
+            '$size': {
+              '$filter': {
+                'input': '$mySubmissions', 
+                'as': 'submission', 
+                'cond': {
+                  '$eq': [
+                    '$$submission.status', 'rejected'
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    ];
+    let cfpCollection = this.getCollection("cfps");
+    let cfps = await cfpCollection.aggregate(pipeline);
+
     let now = new Date();
     let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     cfps = cfps.map(cfp => {
@@ -135,8 +190,19 @@ class API {
   }
 
   async postCfp(data) {
-    let response = await this.post("/cfp", data);
-    return response;
+    data.created_by = this.getUserId();
+
+    // Convert dates
+    data.start_date = new Date(data.start_date);
+    data.end_date = new Date(data.end_date);
+    data.cfp_close_date = new Date(data.cfp_close_date);
+
+    // Add required fields
+    data.submissions = [];
+
+    let cfpCollection = this.getCollection("cfps");
+    let result = await cfpCollection.insertOne(data);
+    return result;
   }
 
   async submitTalks(cfpId, submissions, edit) {
