@@ -17,6 +17,7 @@
     "react-keycloak": "^8.0.1-191210",
     "react-router-dom": "^5.2.0",
     "react-scripts": "4.0.1",
+    "realm-web": "^1.5.1",
     "web-vitals": "^0.2.4"
   },
   "scripts": {

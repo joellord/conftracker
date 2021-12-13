@@ -1,4 +1,7 @@
 import { formatDate } from "../utils/helpers";
+import * as Realm from "realm-web";
+
+const app = new Realm.App({ id: "application-0-konnn" });
 
 const config = require("../config.json");
 
@@ -17,18 +20,52 @@ class API {
     this.tokens = {};
   }
 
-  async setTokens(accessToken, idToken) {
-    let tokensPromises = await Promise.all([accessToken, idToken]);
-    this.tokens.accessToken = tokensPromises[0];
-    this.tokens.idToken = tokensPromises[1].__raw;
-    localStorage.setItem("tokens", JSON.stringify(this.tokens));
-    return true;
+  userLogin() {
+    const redirectUri = "http://localhost:3000";
+    const credentials = Realm.Credentials.google(redirectUri, {openId: true});
+
+    // Calling logIn() opens a Google authentication screen in a new window.
+    app.logIn(credentials).then(user => {
+    // The logIn() promise will not resolve until you call `handleAuthRedirect()`
+    // from the new window after the user has successfully authenticated.
+      console.log(`Logged in with id: ${user.id}`);
+    })
+
+    // When the user is redirected back to your app, handle the redirect to
+    // save the user's access token and close the redirect window. This
+    // returns focus to the original application window and automatically
+    // logs the user in.
+    Realm.handleAuthRedirect();
   }
 
+  userIsLoggedIn() {
+    const user = this.getUserProfile();
+    return user && user.isLoggedIn;
+  }
+
+  getUserProfile() {
+    const user = app.currentUser;
+    return user;
+  }
+
+  userLogout() {
+    app.currentUser.logOut();
+  }
+
+  // async setTokens(accessToken, idToken) {
+  //   let tokensPromises = await Promise.all([accessToken, idToken]);
+  //   this.tokens.accessToken = tokensPromises[0];
+  //   this.tokens.idToken = tokensPromises[1].__raw;
+  //   localStorage.setItem("tokens", JSON.stringify(this.tokens));
+  //   return true;
+  // }
+
   getAccessToken() {
-    let tokens = localStorage.getItem("tokens");
-    tokens = JSON.parse(tokens);
-    return tokens.accessToken;
+    // let tokens = localStorage.getItem("tokens");
+    // tokens = JSON.parse(tokens);
+    // return tokens.accessToken;
+    console.log("ERR: Someone called getAccessToken()");
+    return "token";
   }
 
   async get(url) {

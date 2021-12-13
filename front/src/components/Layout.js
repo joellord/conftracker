@@ -24,6 +24,7 @@ import HelpIcon from '@patternfly/react-icons/dist/js/icons/help-icon';
 import imgAvatar from '@patternfly/react-core/src/components/Avatar/examples/avatarImg.svg';
 import { withAuth0 } from '@auth0/auth0-react';
 import LogoutButton from "./LogoutButton";
+import API from "../api";
 // import { withKeycloak } from "react-keycloak";
 
 class Layout extends Component {
@@ -63,8 +64,9 @@ class Layout extends Component {
 
   render() {
     // let keycloak = this.props.keycloak;
-    const { user } = this.props.auth0;
-    
+    // const { user } = this.props.auth0;
+    const user = API.getUserProfile()._profile.data;
+
     const { isDropdownOpen, isKebabDropdownOpen, route } = this.state;
     const PageNav = (
       <Nav onSelect={this.onNavSelect} aria-label="Nav">
@@ -175,4 +177,5 @@ class Layout extends Component {
 }
 
 // export default withKeycloak(Layout);
-export default withAuth0(Layout);
+// export default withAuth0(Layout);
+export default Layout;

@@ -1,10 +1,15 @@
 import React from "react";
 import { Redirect, Route } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+import API from "../api";
+
+// import { useAuth0 } from "@auth0/auth0-react";
 
 export function PrivateRoute({ component: Component, roles, ...rest }) {
-  const { isAuthenticated } = useAuth0();
-  const isAuthorized = () => isAuthenticated;
+  // const { isAuthenticated } = true;
+  // const isAuthorized = () => isAuthenticated;
+  // const [user, setUser] = React.useState(app.currentUser);
+  const isAuthorized = () => API.userIsLoggedIn;
+  // debugger;
 
   return (
     <Route {...rest} render={props => {

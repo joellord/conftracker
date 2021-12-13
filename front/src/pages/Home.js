@@ -1,9 +1,9 @@
 import React from "react";
 import { Page, PageHeader, PageSection, PageSectionVariants } from "@patternfly/react-core";
 import { Redirect } from "react-router-dom";
-import { useAuth0 } from "@auth0/auth0-react";
+// import { useAuth0 } from "@auth0/auth0-react";
 import LoginButton from "../components/LoginButton";
-import api from "../api";
+import API from "../api";
 
 const Home = () => {
   
@@ -11,7 +11,9 @@ const Home = () => {
     <PageHeader logo="#" />
   )
   
-  const { isAuthenticated, getAccessTokenSilently, getIdTokenClaims } = useAuth0();
+  // const { isAuthenticated, getAccessTokenSilently, getIdTokenClaims } = useAuth0();
+  const isAuthenticated = API.userIsLoggedIn();
+
 
   return (
     <Page header={Header}>
@@ -19,7 +21,7 @@ const Home = () => {
         <h1>Welcome!</h1>
         <p>Please login</p>
 
-      {isAuthenticated && api.setTokens(getAccessTokenSilently(), getIdTokenClaims()) && 
+      {isAuthenticated && 
         <div><Redirect to="/cfp" /></div>
       }
 
