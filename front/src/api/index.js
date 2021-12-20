@@ -7,7 +7,6 @@ const ObjectId = Realm.BSON.ObjectId;
 const config = require("../config.json");
 
 class API {
-  BASE_URL;
   CFP_STATUS = {
     PENDING: "pending",
     SUBMITTED: "submitted",
@@ -16,13 +15,8 @@ class API {
     IGNORED: "ignored"
   }
 
-  constructor(options) {
-    this.BASE_URL = options.BASE_URL;
-    this.tokens = {};
-  }
-
   userLogin() {
-    const redirectUri = "http://localhost:3000";
+    const redirectUri = config.REDIRECT_URL;
     const credentials = Realm.Credentials.google(redirectUri, {openId: true});
 
     app.logIn(credentials).then(user => {
@@ -56,38 +50,6 @@ class API {
     return collection;
   }
 
-  getAccessToken() {
-    // let tokens = localStorage.getItem("tokens");
-    // tokens = JSON.parse(tokens);
-    // return tokens.accessToken;
-    console.log("ERR: Someone called getAccessToken()");
-    return "token";
-  }
-
-  async get(url) {
-    if (url.substr(0, 1) !== "/") url = `/${url}`;
-    let data = await fetch(`${this.BASE_URL}${url}`, {
-      headers: {
-        "Authorization": `Bearer ${this.getAccessToken()}`
-      }
-    }).then(resp=>resp.json());
-    return data;
-  }
-
-  async post(url, data) {
-    if (!data) data = {};
-    if (url.substr(0, 1) !== "/") url = `/${url}`;
-    let response = await fetch(`${this.BASE_URL}${url}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.getAccessToken()}`
-      },
-      body: JSON.stringify(data)
-    }).then(resp=>resp.json());
-    return response;
-  }
-
   async getCfp(id) {
     let cfpCollection = this.getCollection("cfps");
     let cfp = await cfpCollection.aggregate([{
@@ -111,7 +73,6 @@ class API {
   }
 
   async getCfps() {
-    // let cfps = await this.get("/cfp");
     let pipeline = [
       {
         '$match': {
@@ -224,25 +185,65 @@ class API {
   }
 
   async submitTalks(cfpId, submissions, edit) {
-    let data = { submissions, edit };
-    let response = await this.post(`/cfp/submitted/${cfpId}`, data);
-    return response;
+    let profileCollection = this.getCollection("profile");
+    let cfpCollection = this.getCollection("cfps");
+    let profile = await profileCollection.findOne({user_id: this.getUserId()});
+    let talks = profile.talks;
+    let submittedTalks = submissions.map(index => {
+      let talk = talks[index];
+      talk.status = "submitted";
+      talk.user_id = this.getUserId();
+      return talk;
+    });
+
+    let filter = {
+      '_id': ObjectId(cfpId)
+    };
+    let update =  { "$push": { "submissions": { "$each": submittedTalks } } };
+    let result = await cfpCollection.updateOne(filter, update);
+    return result;
   }
 
   async approvedTalks(cfpId, approvedTalks) {
     let data = { approved: approvedTalks };
-    let response = await this.post(`/cfp/approved/${cfpId}`, data);
-    return response;
+    let cfpCollection = this.getCollection("cfps");
+    let filter = {
+      _id: ObjectId(cfpId), 
+      "submissions.user_id": this.getUserId()
+    };
+    let update = {"$set": {"submissions.$[element].status": "accepted"}};
+
+    data.approved.map(async talk => {
+      let arrayFilters = [{"element.title": talk}];
+      await cfpCollection.updateOne(filter, update, {arrayFilters});
+    });
+
+    // Set all other talks as rejected
+    update = {"$set": {"submissions.$[element].status": "rejected"}};
+    arrayFilters = [{"element.status": "submitted"}]
+    await cfpCollection.updateOne(filter, update, {arrayFilters});
+    return {};
   }
 
   async cfpRejected(cfpId) {
-    let response = await this.post(`/cfp/rejected/${cfpId}`);
-    return response;
+    let filter = { _id: ObjectId(cfpId), "submissions.user_id": this.getUserId() };
+    let pipeline = [{
+      $set: {
+        "submissions.status": "rejected"
+      }
+    }];
+    let result = await cfpCollection.updateOne(filter, pipeline);
+    return result;
   }
 
   async cfpIgnored(cfpId) {
-    let response = await this.post(`/cfp/ignored/${cfpId}`);
-    return response;
+    let cfpCollection = this.getCollection("cfps");
+    let filter = {
+      _id: ObjectId(cfpId)
+    };
+    let update = {"$set": {"cfp_ignored": true}};
+    let result = await cfpCollection.updateOne(filter, update);
+    return result;
   }
 
   async getTalks() {
@@ -254,12 +255,129 @@ class API {
   }
 
   async getSubmittedTalks(cfpId) {
-    let data = await this.get(`/cfp/submitted/${cfpId}`);
-    return data;
+    let cfpCollection = this.getCollection("cfps");
+    let pipeline = [{$match: {
+      _id: ObjectId(cfpId),
+     }}, {$unwind: {
+      path: '$submissions',
+      includeArrayIndex: 'submissions.arrayIndex'
+     }}, {$match: {
+      'submissions.user_id': this.getUserId()
+     }}, {$addFields: {
+      title: '$submissions.title',
+      status: '$submissions.status',
+      user_id: '$submissions.user_id',
+      arrayIndex: '$submissions.arrayIndex'
+     }}, {$project: {
+      title: 1,
+      status: 1,
+      user_id: 1,
+      arrayIndex: 1
+     }}];
+     let data = await cfpCollection.aggregate(pipeline);
+     return data;
   }
 
   async getUpcomingEvents() {
-    let data = await this.get(`/upcoming`);
+    let cfpCollection = this.getCollection("cfps");
+    let pipeline = [
+      {
+        '$match': {
+          'end_date': {
+            '$gt': new Date()
+          }
+        }
+      }, {
+        '$addFields': {
+          'mySubmissions': {
+            '$filter': {
+              'input': '$submissions', 
+              'as': 'submission', 
+              'cond': {
+                '$eq': [
+                  '$$submission.user_id', this.getUserId()
+                ]
+              }
+            }
+          }
+        }
+      }, {
+        '$match': {
+          'mySubmissions.status': 'accepted'
+        }
+      }, {
+        '$addFields': {
+          'talks_accepted': {
+            '$filter': {
+              'input': '$mySubmissions', 
+              'as': 'submission', 
+              'cond': {
+                '$eq': [
+                  '$$submission.status', 'accepted'
+                ]
+              }
+            }
+          }
+        }
+      }, {
+        '$addFields': {
+          'talk_titles': {
+            '$map': {
+              'input': '$talks_accepted', 
+              'as': 's', 
+              'in': '$$s.title'
+            }
+          }
+        }
+      }, {
+        '$addFields': {
+          'talks': {
+            '$reduce': {
+              'input': '$talk_titles', 
+              'initialValue': '', 
+              'in': {
+                '$cond': {
+                  'if': {
+                    '$eq': [
+                      {
+                        '$indexOfArray': [
+                          '$talk_titles', '$$this'
+                        ]
+                      }, 0
+                    ]
+                  }, 
+                  'then': {
+                    '$concat': [
+                      '$$value', '$$this'
+                    ]
+                  }, 
+                  'else': {
+                    '$concat': [
+                      '$$value', ', ', '$$this'
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }, {
+        '$sort': {
+          'start_date': 1
+        }
+      }, {
+        '$project': {
+          '_id': 1, 
+          'conference': 1, 
+          'start_date': 1, 
+          'end_date': 1, 
+          'url': 1, 
+          'talks': 1
+        }
+      }
+    ];
+    let data = await cfpCollection.aggregate(pipeline);
+
     data = data.map(upcoming => {
       upcoming.dates = `${formatDate(upcoming.start_date)} - ${formatDate(upcoming.end_date)}`;
       return upcoming;
@@ -268,13 +386,24 @@ class API {
   }
 
   async postTalk(data) {
-    let resp = await this.post("/talk", data);
-    return resp;
+    let profileCollection = this.getCollection("profile");
+    let result = await profileCollection.updateOne(
+      {user_id: this.getUserId()},
+      {
+        $push: {
+          talks: data
+        }
+      }
+    );
+    return result;
   }
 
   async postProfileField(data) {
-    let resp = await this.post("/profile/field", data);
-    return resp;
+    let profileCollection = this.getCollection("profile");
+    let filter = { _id: this.getUserId() };
+    let update = { "$push": {"profileFields": data}};
+    let result = profileCollection.updateOne(filter, update);
+    return result;
   }
 
   async getProfile() {
@@ -286,8 +415,6 @@ class API {
   }
 }
 
-const api = new API({
-  BASE_URL: config.BASE_URL
-});
+const api = new API();
 
 export default api;

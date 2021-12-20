@@ -29,7 +29,8 @@ export default class Cfp extends Component {
 
     this.updateProfile = async () => {
       let profile = await API.getProfile();
-      this.setState({profile});
+      let profileFields = profile.profileFields;
+      this.setState({profile: profileFields});
     }
 
     this.onChange = (newValue, e) => {
