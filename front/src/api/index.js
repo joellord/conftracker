@@ -220,12 +220,13 @@ class API {
 
     // Set all other talks as rejected
     update = {"$set": {"submissions.$[element].status": "rejected"}};
-    arrayFilters = [{"element.status": "submitted"}]
+    let arrayFilters = [{"element.status": "submitted"}]
     await cfpCollection.updateOne(filter, update, {arrayFilters});
     return {};
   }
 
   async cfpRejected(cfpId) {
+    let cfpCollection = this.getCollection("cfps");
     let filter = { _id: ObjectId(cfpId), "submissions.user_id": this.getUserId() };
     let pipeline = [{
       $set: {

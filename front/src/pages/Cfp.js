@@ -154,8 +154,8 @@ export default class Cfp extends Component {
         <PageSection>
           <DataList aria-label="CFP list" isCompact>
             {this.state.cfps.map(cfp => {
-              // if (!this.state.filters[cfp.status]) return null;
-              // if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return null;
+              if (!this.state.filters[cfp.status]) return null;
+              if (cfp.status === STATUS.PENDING && cfp.cfpExpired) return null;
               return (
                 <DataListItem id={cfp._id} key={cfp._id}>
                   <DataListItemRow>
