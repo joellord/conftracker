@@ -22,6 +22,7 @@ export default class CfpSubmit extends Component {
       isModalOpen: false,
       profileData: []
     };
+
     this.handleSelection = (checked, event) => {
       const target = event.target;
       const talkId = parseInt(target.name.replace("talk-", ""));
@@ -37,26 +38,36 @@ export default class CfpSubmit extends Component {
       console.log(submissions);
       this.setState({ submissions });
     }
+
     this.submitTalks = async () => {
       await API.submitTalks(this.state.cfpId, this.state.submissions, this.state.editing);
       this.setState({ submitted: true });
     }
+
     this.updateTalks = async () => {
       let talks = await API.getTalks();
       this.setState({ talks });
     }
+
     this.updateCfp = async (id) => {
       let cfp = await API.getCfp(id);
       this.setState({ cfp });
     }
+
     this.updateSelection = async (id) => {
-      let submissions = await API.getSubmittedTalks(id)
-      submissions = submissions.map(talk => talk._id);
+      let submissions = await API.getSubmittedTalks(id);
+      let talksTitles = this.state.talks.map(t => t.title);
+      submissions = submissions.map(talk => {
+        let talkIndex = talksTitles.indexOf(talk.title);
+        return (talkIndex > -1) ? talkIndex : null;
+      }).filter(s => s);
       this.setState({ submissions });
     }
+
     this.handleModalToggle = () => {
       this.setState({isModalOpen: !this.state.isModalOpen});
     }
+
     this.updateProfile = async () => {
       let profile = await API.getProfile();
       let profileData = profile.profileFields;
@@ -64,9 +75,9 @@ export default class CfpSubmit extends Component {
     }
   }
 
-  componentDidMount() {
-    this.updateTalks();
-    this.updateCfp(this.state.cfpId);
+  async componentDidMount() {
+    await this.updateTalks();
+    await this.updateCfp(this.state.cfpId);
     if (this.state.editing) {
       this.updateSelection(this.state.cfpId);
     }

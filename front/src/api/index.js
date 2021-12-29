@@ -199,6 +199,12 @@ class API {
     let filter = {
       '_id': ObjectId(cfpId)
     };
+
+    if (edit) {
+      let pullUpdate = { "$pull": { "submissions": {"user_id": this.getUserId() } } };
+      await cfpCollection.updateOne(filter, pullUpdate);
+    }
+
     let update =  { "$push": { "submissions": { "$each": submittedTalks } } };
     let result = await cfpCollection.updateOne(filter, update);
     return result;
