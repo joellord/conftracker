@@ -22,6 +22,7 @@ jobs:
           realm-cli pull --remote=${{ secrets.APP_ID }} --local=/opt/realm_app -y
       - name: "Copy the React application"
         run: |
+          rm -rf /opt/realm_app/hosting
           mkdir /opt/realm_app/hosting && mkdir /opt/realm_app/hosting/files
           cd front
           echo "Currently in folder" $(pwd)
