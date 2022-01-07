@@ -1,4 +1,4 @@
 {
-  "REDIRECT_URL": "http://localhost:3000",
+  "REDIRECT_URL": "application-0-konnn.mongodbstitch.com",
   "DB_NAME": "conferences"
 }
