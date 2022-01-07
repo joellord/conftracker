@@ -23,6 +23,7 @@ jobs:
       - name: "Copy the React application"
         run: |
           mkdir /opt/realm_app/hosting && mkdir /opt/realm_app/hosting/files
+          cd front
           echo "Currently in folder" $(pwd)
           cp -r ./build/* /opt/realm_app/hosting/files
       - name: "Push the realm app"
