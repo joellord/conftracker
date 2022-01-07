@@ -1,0 +1,29 @@
+name: Build
+
+on: [push]
+
+jobs:
+  Build-and-Deploy:
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v2
+      - name: "Build React application"
+        run: |
+          cd front
+          npm install
+          npm run build
+      - name: "Install Realm CLI"
+        run: |
+          npm install -g mongodb-realm-cli
+          realm-cli login --api-key="${{ secrets.REALM_PUBLIC_KEY }}" --private-api-key="${{ secrets.REALM_PRIVATE_KEY }}"
+      - name: "Export current application"
+        run: |
+          mkdir /opt/realm_app
+          realm-cli export --app-id=${{ secrets.APP_ID }} --output=/opt/realm_app
+      - name: "Copy the React application"
+        run: |
+          mkdir /opt/realm_app/hosting && mkdir /opt/realm_app/hosting/files
+          cp -r ./build/* /opt/realm_app/hosting/files
+      - name: "Import the realm app"
+        run: |
+          realm-cli import --app-id=${{ secrets.APP_ID }} --path=/opt/realm_app --strategy=replace --include-hosting
